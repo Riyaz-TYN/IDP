@@ -1,23 +1,30 @@
 # ${{ values.name }}
 
-This is a standalone React application pre-configured to use our internal design system (`@tyn/shared-ui`).
+This is a standalone React application pre-configured to use our internal design system (`@riyaz-tyn/shared-ui`).
 
 ## 🚀 Quick Start (Local Development)
 
-To run this application locally, you only need Node.js and `pnpm` installed on your machine.
+You only need **Node.js** and **pnpm** installed.
 
-1. **Install Dependencies**
-   Run the following command to install all required packages. This will automatically download our pre-built `@tyn/shared-ui` components from the registry:
-   ```bash
-   pnpm install
-   ```
+### First time on a new machine (one-time only)
 
-2. **Start the Development Server**
-   Start the Vite development server with hot-module replacement (HMR):
-   ```bash
-   pnpm run dev
-   ```
+Set your GitHub Packages token as a system environment variable.  
+Get the token from your team's internal docs / onboarding guide.
 
+**Windows:**
+```powershell
+[System.Environment]::SetEnvironmentVariable("GITHUB_PACKAGES_TOKEN", "your-token-here", "User")
+# Then restart your terminal
+```
+
+**Mac/Linux** — add to `~/.zshrc` or `~/.bashrc`:
+```bash
+export GITHUB_PACKAGES_TOKEN=your-token-here
+```
+
+Once set, this works for **every** `@riyaz-tyn` project automatically — never set it again.
+
+### Every time (normal workflow)
 3. **View the App**
    Open your browser and navigate to the localhost URL provided in your terminal (usually `http://localhost:5173`).
 
