@@ -1,0 +1,62 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: react-monorepo-template
+  title: React App (Monorepo)
+  description: Create a standalone React app repository and automatically add it as a Git submodule to the TYN-NFIO-RE monorepo.
+  tags:
+    - react
+    - vite
+    - frontend
+spec:
+  owner: user:guest
+  type: website
+
+  parameters:
+    - title: Application Details
+      required:
+        - name
+      properties:
+        name:
+          title: Application Name
+          type: string
+          description: Unique name of the application (e.g., 'billing-app'). This will also be the repository name.
+          ui:autofocus: true
+
+  steps:
+    - id: fetch-base
+      name: Fetch Base Skeleton
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          name: ${{ parameters.name }}
+
+    - id: publish-repo
+      name: Publish Standalone Repository
+      action: publish:github
+      input:
+        allowedHosts: ['github.com']
+        description: "Standalone React application ${{ parameters.name }}"
+        repoUrl: github.com?repo=${{ parameters.name }}&owner=Riyaz-TYN
+        defaultBranch: main
+
+    - id: add-submodule
+      name: Link as Submodule to Monorepo
+      action: monorepo:submodule:add
+      input:
+        # The main monorepo
+        repoUrl: https://github.com/Riyaz-TYN/TYN-NFIO-RE.git
+        # The newly created app repository URL
+        submoduleUrl: ${{ steps['publish-repo'].output.remoteUrl }}
+        # The path inside the monorepo where the submodule should live
+        submodulePath: frontend/${{ parameters.name }}
+        # The GitHub token (passed securely via Backstage secrets)
+        githubToken: ${{ secrets.GITHUB_TOKEN }}
+
+    - id: register
+      name: Register
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish-repo'].output.repoContentsUrl }}
+        catalogInfoPath: '/catalog-info.yaml'
