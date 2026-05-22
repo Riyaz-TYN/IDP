@@ -36,7 +36,6 @@ spec:
       name: Publish Standalone Repository
       action: publish:github
       input:
-        allowedHosts: ['github.com']
         description: "Standalone React application ${{ parameters.name }}"
         repoUrl: github.com?repo=${{ parameters.name }}&owner=Riyaz-TYN
         defaultBranch: main
@@ -51,12 +50,10 @@ spec:
         submoduleUrl: ${{ steps['publish-repo'].output.remoteUrl }}
         # The path inside the monorepo where the submodule should live
         submodulePath: frontend/${{ parameters.name }}
-        # The GitHub token (passed securely via Backstage secrets)
-        githubToken: ${{ secrets.GITHUB_TOKEN }}
+        # Token is resolved automatically from integrations.github[].token in app-config
 
     - id: register
       name: Register
       action: catalog:register
       input:
-        repoContentsUrl: ${{ steps['publish-repo'].output.repoContentsUrl }}
-        catalogInfoPath: '/catalog-info.yaml'
+        catalogInfoUrl: 'https://github.com/Riyaz-TYN/${{ parameters.name }}/blob/main/catalog-info.yaml'

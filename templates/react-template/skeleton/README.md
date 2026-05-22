@@ -1,4 +1,4 @@
-# ${{ parameters.name }}
+# ${{ values.name }}
 
 This is a standalone React application pre-configured to use our internal design system (`@tyn/shared-ui`).
 

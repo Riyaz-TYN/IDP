@@ -1,11 +1,11 @@
 import React from 'react';
 // Auto-populated shared UI component imported from the monorepo workspace
-import { Button } from '@tyn/shared-ui';
+import { Button } from '@riyaz-tyn/shared-ui';
 
 function App() {
   return (
     <div style={{ padding: '2rem', fontFamily: 'sans-serif' }}>
-      <h1>${{ parameters.name }}</h1>
+      <h1>${{ values.name }}</h1>
       <p>
         Welcome to your newly scaffolded React application! 
         This app is part of the monorepo and is pre-configured to use the shared UI library.

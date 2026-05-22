@@ -1,8 +1,8 @@
 apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
-  name: ${{ parameters.name }}
-  description: A frontend React application for ${{ parameters.name }}
+  name: ${{ values.name }}
+  description: A frontend React application for ${{ values.name }}
   tags:
     - react
     - frontend
