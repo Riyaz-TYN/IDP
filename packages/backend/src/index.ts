@@ -8,6 +8,7 @@
 
 import { createBackend } from '@backstage/backend-defaults';
 import { customScaffolderModule } from './actions/gitSubmodule';
+import { credentialsAuthPlugin } from './auth/credentialsModule';
 
 const backend = createBackend();
 
@@ -21,6 +22,7 @@ backend.add(
   import('@backstage/plugin-scaffolder-backend-module-notifications'),
 );
 backend.add(customScaffolderModule);
+backend.add(credentialsAuthPlugin);
 
 // techdocs plugin
 backend.add(import('@backstage/plugin-techdocs-backend'));

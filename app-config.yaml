@@ -82,6 +82,12 @@ auth:
   providers:
     # See https://backstage.io/docs/auth/guest/provider
     guest: {}
+
+# Simple credential-based login gate — temporary until AWS IAM is configured.
+# Set actual values in app-config.local.yaml (gitignored).
+credentialsAuth:
+  username: ${CREDENTIALS_USERNAME}
+  password: ${CREDENTIALS_PASSWORD}
   # see https://backstage.io/docs/ai/mcp-actions#client-id-metadata-documents
   # to learn more about client id metadata documents
   experimentalClientIdMetadataDocuments:
