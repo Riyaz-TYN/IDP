@@ -115,9 +115,21 @@ catalog:
       rules:
         - allow: [Template]
 
-    # Our custom React Monorepo template
+    # Our custom React Monorepo template (legacy)
     - type: file
       target: ../../templates/react-template/template.yaml
+      rules:
+        - allow: [Template]
+
+    # Next.js Modular Monolith template
+    - type: file
+      target: ../../templates/nextjs-template/template.yaml
+      rules:
+        - allow: [Template]
+
+    # FastAPI Modular Monolith template
+    - type: file
+      target: ../../templates/fastapi-template/template.yaml
       rules:
         - allow: [Template]
 

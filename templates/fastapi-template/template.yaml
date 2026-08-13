@@ -1,0 +1,82 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: fastapi-modular-template
+  title: FastAPI Backend (Modular Monolith)
+  description: Production-ready FastAPI service — modular domain structure, SQLAlchemy async, Alembic migrations. Runs with `docker compose up` immediately.
+  tags:
+    - fastapi
+    - backend
+    - python
+    - postgresql
+spec:
+  owner: group:platform-team
+  type: service
+
+  parameters:
+    - title: Service Details
+      required:
+        - name
+        - owner
+      properties:
+        name:
+          title: Service Name
+          type: string
+          description: Lowercase, hyphen-separated (e.g. user-service). Becomes the repo name.
+          pattern: '^[a-z][a-z0-9-]*$'
+          ui:autofocus: true
+        description:
+          title: Description
+          type: string
+          description: One line — what does this service do?
+        owner:
+          title: Owner (Team)
+          type: string
+          description: Team that owns this service.
+          ui:field: OwnerPicker
+          ui:options:
+            catalogFilter:
+              kind: Group
+        port:
+          title: Port
+          type: number
+          default: 8000
+          description: Port the service runs on locally.
+
+  steps:
+    - id: fetch-base
+      name: Fetch FastAPI Skeleton
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          name: ${{ parameters.name }}
+          description: ${{ parameters.description if parameters.description else 'A FastAPI service by The Yellow Network' }}
+          owner: ${{ parameters.owner }}
+          port: ${{ parameters.port if parameters.port else 8000 }}
+          moduleName: ${{ parameters.name | replace('-', '_') }}
+
+    # TODO: Replace with publish:awsCodeCommit targeting labs/${{ parameters.name }}
+    - id: publish
+      name: Publish Repository (GitHub — swap for CodeCommit later)
+      action: publish:github
+      input:
+        description: ${{ parameters.description if parameters.description else parameters.name }}
+        repoUrl: github.com?repo=${{ parameters.name }}&owner=Riyaz-TYN
+        defaultBranch: main
+        repoVisibility: private
+
+    - id: register
+      name: Register in Backstage Catalog
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+        catalogInfoPath: /catalog-info.yaml
+
+  output:
+    links:
+      - title: Open Repository
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: View in Catalog
+        icon: catalog
+        entityRef: ${{ steps['register'].output.entityRef }}
