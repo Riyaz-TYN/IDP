@@ -17,6 +17,7 @@ A Backstage-based Internal Developer Portal for The Yellow Network (TYN). Teams 
 9. [Migrating to AWS IAM Authentication](#9-migrating-to-aws-iam-authentication)
 10. [Migrating to a Cloud Database (PostgreSQL)](#10-migrating-to-a-cloud-database-postgresql)
 11. [Environment Variables Reference](#11-environment-variables-reference)
+12. [Troubleshooting](#12-troubleshooting)
 
 ---
 
@@ -178,6 +179,8 @@ catalog:
 
 > **Important:** Replace `C:/absolute/path/to/nifo-refractor` with the actual full path on your machine (e.g. `E:/nifo-ref/nifo-refractor` on Windows, `/home/user/nifo-refractor` on Linux). Relative paths do not work in `catalog.locations`.
 
+> **Gotcha — arrays in local config replace, they do not merge.** If `catalog.locations` exists in both `app-config.yaml` and `app-config.local.yaml`, the local file's list completely replaces the main file's list. This means you must copy **all** 7 locations into `app-config.local.yaml` — if you only put 4, only 4 templates will appear in `/create`. The template above already has all 7; do not remove any.
+
 ### Step 3 — Start the portal
 
 ```bash
@@ -245,6 +248,26 @@ These are seeded on first boot from `app-config.local.yaml`. Update passwords in
 | Team Delta | `team-delta` | `tyn@delta2026` |
 | Team Epsilon | `team-epsilon` | `tyn@epsilon2026` |
 | Platform Admin | `platform-admin` | *(set when creating the account — see Step 4 above)* |
+
+### Changing a team's password
+
+There is no UI for changing passwords. Use the API directly (backend must be running):
+
+```bash
+# Windows (PowerShell):
+Invoke-RestMethod -Uri "http://localhost:7007/api/credentials-auth/teams/team-alpha" `
+  -Method PUT -ContentType "application/json" `
+  -Body '{"password":"new-password-here"}'
+
+# Linux/macOS:
+curl -s -X PUT http://localhost:7007/api/credentials-auth/teams/team-alpha \
+  -H "Content-Type: application/json" \
+  -d '{"password":"new-password-here"}'
+```
+
+Replace `team-alpha` with whichever `groupId` you want to update. The change takes effect immediately — no restart needed.
+
+> The `credentialsAuth.teams` list in `app-config.local.yaml` is **only used to seed the database on the very first boot** (when the `tyn_teams` table is empty). Changing the password there after first boot has no effect — use the API above instead.
 
 ### Admin vs. regular team access
 
@@ -751,6 +774,94 @@ All secrets go in `app-config.local.yaml` for local dev. Use real environment va
 | `POSTGRES_USER` | Database user |
 | `POSTGRES_PASSWORD` | Database password |
 | `POSTGRES_DB` | Database name (e.g. `backstage`) |
+
+---
+
+## 12. Troubleshooting
+
+### Port already in use (EADDRINUSE 3000 or 7007)
+
+A previous `yarn start` is still running in the background. Kill all Node.js processes and restart:
+
+```bash
+# Windows:
+taskkill /F /IM node.exe
+
+# Linux/macOS:
+pkill -f node
+```
+
+Then run `yarn start` again.
+
+### Templates not showing in /create
+
+Open `/create` — if the Next.js and FastAPI templates are missing, check two things:
+
+**1. Are your catalog locations complete?**
+
+`catalog.locations` in `app-config.local.yaml` replaces the list in `app-config.yaml` entirely. If you only have some entries, only those templates load. Verify all 7 locations are in `app-config.local.yaml` with absolute paths (see Step 2 above).
+
+To confirm what the catalog has loaded, query the API while the backend is running:
+
+```bash
+# Count templates (should be 3+):
+curl -s "http://localhost:7007/api/catalog/entities?filter=kind=Template" | node -e "const d=require('fs').readFileSync('/dev/stdin','utf8'); console.log(JSON.parse(d).length + ' templates')"
+
+# Count location entities (should be 7):
+curl -s "http://localhost:7007/api/catalog/entities?filter=kind=Location" | node -e "const d=require('fs').readFileSync('/dev/stdin','utf8'); console.log(JSON.parse(d).length + ' locations')"
+```
+
+**2. Are the paths correct?**
+
+Check the backend terminal — catalog errors print there. A wrong path shows as `ENOENT: no such file or directory`. Fix the path in `app-config.local.yaml` and restart.
+
+### Backend crashes immediately on startup
+
+Check the backend terminal output. Common causes:
+
+| Error message | Fix |
+|---|---|
+| `connect ECONNREFUSED` on port 5432 | A PostgreSQL plugin is enabled but no PostgreSQL is running. Check `packages/backend/src/index.ts` — ensure the pg search module line is commented out (see project structure) |
+| `SQLITE_CANTOPEN` | The `packages/backend/db/` directory doesn't exist. Create it: `mkdir -p packages/backend/db` (or `New-Item -ItemType Directory packages/backend/db` on Windows) |
+| `Error: Cannot find module` | Run `yarn install` again — a package is missing |
+
+### Login says "Invalid username or password" but credentials are correct
+
+The database was seeded from a different password than what you're using. The `app-config.local.yaml` passwords only apply on first boot. After that the database is the source of truth. To reset:
+
+1. Stop the backend
+2. Delete `packages/backend/db/credentials-auth.sqlite`
+3. Start again — it re-seeds from `app-config.local.yaml` with your current passwords
+
+### Teams page shows no edit controls (can't create/delete teams)
+
+You are not logged in as `platform-admin`. Sign out and log in with the `platform-admin` credentials. If you haven't created that account yet, see Step 4 in section 3.
+
+If you are logged in as `platform-admin` but still see no controls, your browser session may be from before the `isAdmin` field was added. Sign out (sidebar → Sign Out), sign back in, and the session will pick up the correct role.
+
+### Scaffolder fails with "Bad credentials" at the Publish step
+
+Your GitHub PAT has expired or been revoked. Rotate it — see "Rotating GitHub credentials" in section 3.
+
+### Scaffolder fails with "GIT_ASKPASS" error at the submodule step
+
+This is already fixed in the codebase (`packages/backend/src/actions/gitSubmodule.ts` deletes the `GIT_ASKPASS` env var before running git). If you see this error, make sure you are on the latest code (`git pull`).
+
+### Resetting the entire database (start fresh)
+
+Stop the backend, delete all SQLite files, then restart:
+
+```bash
+# Windows:
+Remove-Item packages/backend/db/*.sqlite
+
+# Linux/macOS:
+rm packages/backend/db/*.sqlite
+```
+
+On next boot, Backstage recreates all tables and re-seeds teams from `app-config.local.yaml`. You will need to recreate the `platform-admin` account (Step 4 in section 3).
+
+> This only resets the custom team tables and Backstage's internal data (catalog cache, scaffolder task history). It does not affect GitHub repos or the umbrella repo — those are permanent.
 
 ---
 
