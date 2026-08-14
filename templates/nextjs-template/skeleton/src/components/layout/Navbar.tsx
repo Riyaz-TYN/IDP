@@ -6,18 +6,30 @@ interface NavbarProps {
 
 export function Navbar({ appName }: NavbarProps) {
   return (
-    <nav className="flex items-center justify-between px-8 py-4 bg-card border-b border-border">
+    <nav
+      className="flex items-center justify-between px-8 h-comp-lg shadow-panel"
+      style={{ backgroundColor: '#10233F' }}
+    >
+      {/* Brand */}
       <div className="flex items-center gap-3">
-        <div className="flex items-center justify-center w-8 h-8 rounded-md bg-primary">
-          <span className="font-black text-primary-foreground text-sm">Y</span>
+        <div
+          className="flex items-center justify-center w-8 h-8 rounded-md font-black text-sm"
+          style={{ backgroundColor: '#22D3EE', color: '#071A2F' }}
+        >
+          N
         </div>
-        <span className="font-bold text-foreground text-base tracking-tight">{appName}</span>
+        <span className="font-semibold text-white text-body tracking-tight">
+          {appName}
+        </span>
       </div>
 
+      {/* Nav links */}
       <div className="flex items-center gap-6">
-        <a href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Home</a>
-        <a href="/docs" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Docs</a>
-        <Badge variant="outline">TYN Internal</Badge>
+        <a href="/"     className="text-label text-white/70 hover:text-white transition-colors">Home</a>
+        <a href="/docs" className="text-label text-white/70 hover:text-white transition-colors">Docs</a>
+        <Badge variant="outline" className="border-white/30 text-white/80 bg-white/10">
+          TYN Internal
+        </Badge>
       </div>
     </nav>
   );

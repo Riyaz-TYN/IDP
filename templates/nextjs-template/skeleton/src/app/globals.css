@@ -2,47 +2,92 @@
 @tailwind components;
 @tailwind utilities;
 
+/* =========================================================
+   THEME LAYER — Design tokens from @nifo/shared-ui
+   ========================================================= */
 @layer base {
   :root {
-    /* TYN dark theme — navy base, yellow accent */
-    --background:         214 60% 12%;   /* #0d1b2e */
-    --foreground:         0   0%  100%;
+    --background: 216 33% 98%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
 
-    --card:               214 44% 16%;
-    --card-foreground:    0   0%  100%;
+    /* Brand primary: #0070C0 */
+    --primary: 205 100% 37.6%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 205 100% 30%;
+    --primary-soft: 212 100% 97%;
+    --primary-muted: 210 100% 90%;
 
-    --popover:            214 44% 14%;
-    --popover-foreground: 0   0%  100%;
-
-    --primary:            73  100% 40%;  /* #c8e600 */
-    --primary-foreground: 214 60% 12%;
-
-    --secondary:          214 44% 18%;
-    --secondary-foreground: 0 0% 100%;
-
-    --muted:              214 44% 20%;
-    --muted-foreground:   215 16% 60%;
-
-    --accent:             214 44% 24%;
-    --accent-foreground:  0   0%  100%;
-
-    --destructive:        0   72% 51%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
 
-    --border:             214 44% 22%;
-    --input:              214 44% 18%;
-    --ring:               73  100% 40%;
-
-    --radius:             0.5rem;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 205 100% 37.6%;
+    --radius: 1rem;
+    --cyan-500: #339af0;
   }
 }
 
+/* =========================================================
+   BASE LAYER
+   ========================================================= */
 @layer base {
   * {
-    @apply border-border;
+    @apply border-border box-border;
   }
-  body {
+
+  html, body {
     @apply bg-background text-foreground;
-    font-family: Inter, Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    min-height: 100vh;
   }
+}
+
+/* =========================================================
+   COMPONENTS LAYER
+   ========================================================= */
+@layer components {
+  .nifo-scrollbar::-webkit-scrollbar       { width: 6px; }
+  .nifo-scrollbar::-webkit-scrollbar-track { background: transparent; }
+  .nifo-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+  .nifo-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+  .nifo-shimmer {
+    height: 200px;
+    background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+    background-size: 200% 100%;
+    @apply animate-shimmer rounded-xl;
+  }
+
+  .nifo-chat-container {
+    height: calc(100vh - 200px);
+    overflow-y: auto;
+    scrollbar-width: auto;
+  }
+  .nifo-chat-container::-webkit-scrollbar       { width: 8px; }
+  .nifo-chat-container::-webkit-scrollbar-thumb { background: #bbb; border-radius: 6px; }
+  .nifo-chat-container::-webkit-scrollbar-track { background: #f1f1f1; }
+
+  .nifo-swiper-slide        { @apply scale-90 opacity-70 transition-transform duration-300 ease-in-out; }
+  .nifo-swiper-slide-active { @apply scale-110 opacity-100 z-10; }
+}
+
+/* =========================================================
+   UTILITIES LAYER
+   ========================================================= */
+@layer utilities {
+  .scrollbar-hide           { overflow: auto; }
+  .scrollbar-no-buttons::-webkit-scrollbar-button { display: none !important; }
+  body.lock-scroll          { overflow: hidden; position: fixed; width: 100%; }
 }

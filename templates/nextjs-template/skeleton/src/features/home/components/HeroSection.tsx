@@ -8,20 +8,20 @@ interface HeroSectionProps {
 
 export function HeroSection({ title, description }: HeroSectionProps) {
   return (
-    <section className="flex flex-col items-center justify-center min-h-[80vh] px-6 text-center">
-      <Badge variant="outline" className="mb-6 tracking-widest uppercase text-xs">
-        The Yellow Network
+    <section className="flex flex-col items-center justify-center min-h-[80vh] px-6 text-center bg-surface-page">
+      <Badge variant="outline" className="mb-6 uppercase tracking-widest text-tiny">
+        The Yellow Network · NiFo
       </Badge>
 
-      <h1 className="text-5xl font-black text-foreground mb-4 leading-tight">
+      <h1 className="text-h1 text-ink-heading mb-4 max-w-2xl">
         {title}
       </h1>
 
-      <p className="text-lg text-muted-foreground max-w-xl mb-10">
+      <p className="text-body text-ink-muted max-w-xl mb-10">
         {description}
       </p>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
         <Button size="lg">Get Started</Button>
         <Button size="lg" variant="outline">Learn More</Button>
       </div>
