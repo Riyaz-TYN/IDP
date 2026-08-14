@@ -105,6 +105,7 @@ auth:
 # Define actual team passwords in app-config.local.yaml (gitignored).
 # Each team logs in with their username/password and sees their members + projects.
 credentialsAuth:
+  adminGroupId: platform-admin
   teams:
     - username: team-alpha
       password: ${TEAM_ALPHA_PASSWORD}

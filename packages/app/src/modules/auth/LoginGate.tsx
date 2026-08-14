@@ -1,11 +1,12 @@
 import { useState, type FormEvent, type CSSProperties, type ReactNode } from 'react';
 
-const SESSION_KEY = 'tyn-auth';
+export const SESSION_KEY = 'tyn-auth';
 
-interface TeamSession {
+export interface TeamSession {
   groupId: string;
   displayName: string;
   members: string[];
+  isAdmin: boolean;
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -117,7 +118,7 @@ const styles: Record<string, CSSProperties> = {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function getSession(): TeamSession | null {
+export function getSession(): TeamSession | null {
   try {
     const raw = sessionStorage.getItem(SESSION_KEY);
     return raw ? JSON.parse(raw) : null;
@@ -150,6 +151,7 @@ function LoginPage({ onSuccess }: { onSuccess: (session: TeamSession) => void })
           groupId:     data.groupId,
           displayName: data.displayName,
           members:     data.members,
+          isAdmin:     data.isAdmin ?? false,
         };
         sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
         onSuccess(session);

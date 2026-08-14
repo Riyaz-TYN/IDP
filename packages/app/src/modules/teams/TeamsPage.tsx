@@ -1,4 +1,5 @@
 import { useState, useEffect, type CSSProperties, type FormEvent } from 'react';
+import { getSession } from '../auth/LoginGate';
 
 interface Team {
   groupId: string;
@@ -476,10 +477,12 @@ function CreateTeamModal({
 
 function TeamCard({
   team,
+  isAdmin,
   onUpdated,
   onDeleted,
 }: {
   team: Team;
+  isAdmin: boolean;
   onUpdated: (team: Team) => void;
   onDeleted: (groupId: string) => void;
 }) {
@@ -534,7 +537,7 @@ function TeamCard({
             @{team.username} · {members.length} member{members.length !== 1 ? 's' : ''}
           </span>
         </div>
-        {!confirmDelete ? (
+        {isAdmin && (!confirmDelete ? (
           <button style={s.deleteBtn} onClick={() => setConfirmDelete(true)}>Delete</button>
         ) : (
           <div style={s.confirmRow}>
@@ -542,7 +545,7 @@ function TeamCard({
             <button style={s.confirmYes} onClick={handleDelete}>Yes</button>
             <button style={s.confirmNo} onClick={() => setConfirmDelete(false)}>No</button>
           </div>
-        )}
+        ))}
       </div>
 
       <div style={s.memberSection}>
@@ -551,30 +554,36 @@ function TeamCard({
           {members.map(m => (
             <span key={m} style={s.chip}>
               {m}
-              <button
-                type="button"
-                style={s.chipRemove}
-                onClick={() => removeMember(m)}
-                disabled={saving}
-              >×</button>
+              {isAdmin && (
+                <button
+                  type="button"
+                  style={s.chipRemove}
+                  onClick={() => removeMember(m)}
+                  disabled={saving}
+                >×</button>
+              )}
             </span>
           ))}
-          {members.length === 0 && <span style={s.emptyHint}>No members — add one below</span>}
+          {members.length === 0 && (
+            <span style={s.emptyHint}>{isAdmin ? 'No members — add one below' : 'No members yet'}</span>
+          )}
         </div>
-        <div style={s.memberInputRow}>
-          <input
-            id={`add-${team.groupId}`}
-            style={{ ...s.input, marginBottom: 0, flex: 1, fontSize: 13 }}
-            value={memberInput}
-            onChange={e => setMemberInput(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); void addMember(); } }}
-            placeholder="Add member name…"
-            disabled={saving}
-          />
-          <button type="button" style={s.addBtn} onClick={() => void addMember()} disabled={saving}>
-            {saving ? '…' : 'Add'}
-          </button>
-        </div>
+        {isAdmin && (
+          <div style={s.memberInputRow}>
+            <input
+              id={`add-${team.groupId}`}
+              style={{ ...s.input, marginBottom: 0, flex: 1, fontSize: 13 }}
+              value={memberInput}
+              onChange={e => setMemberInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); void addMember(); } }}
+              placeholder="Add member name…"
+              disabled={saving}
+            />
+            <button type="button" style={s.addBtn} onClick={() => void addMember()} disabled={saving}>
+              {saving ? '…' : 'Add'}
+            </button>
+          </div>
+        )}
         {error && <p style={s.errorText}>{error}</p>}
       </div>
     </div>
@@ -584,6 +593,7 @@ function TeamCard({
 // ─── Teams Page ───────────────────────────────────────────────────────────────
 
 export function TeamsPage() {
+  const isAdmin = getSession()?.isAdmin ?? false;
   const [teams, setTeams]       = useState<Team[]>([]);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState('');
@@ -612,9 +622,15 @@ export function TeamsPage() {
       <div style={s.pageHeader}>
         <div>
           <h1 style={s.pageTitle}>Team Management</h1>
-          <p style={s.pageSubtitle}>Create teams, add or remove members at any time.</p>
+          <p style={s.pageSubtitle}>
+            {isAdmin
+              ? 'Create teams, add or remove members at any time.'
+              : 'View all teams and their members.'}
+          </p>
         </div>
-        <button style={s.newTeamBtn} onClick={() => setShowCreate(true)}>+ New Team</button>
+        {isAdmin && (
+          <button style={s.newTeamBtn} onClick={() => setShowCreate(true)}>+ New Team</button>
+        )}
       </div>
 
       {loading && <p style={s.stateText}>Loading teams…</p>}
@@ -623,8 +639,12 @@ export function TeamsPage() {
       {!loading && !error && teams.length === 0 && (
         <div style={s.emptyState}>
           <div style={s.emptyIcon}>👥</div>
-          <p style={s.emptyStateText}>No teams yet. Create your first team to get started.</p>
-          <button style={s.newTeamBtn} onClick={() => setShowCreate(true)}>Create Team</button>
+          <p style={s.emptyStateText}>
+            {isAdmin ? 'No teams yet. Create your first team to get started.' : 'No teams have been created yet.'}
+          </p>
+          {isAdmin && (
+            <button style={s.newTeamBtn} onClick={() => setShowCreate(true)}>Create Team</button>
+          )}
         </div>
       )}
 
@@ -633,6 +653,7 @@ export function TeamsPage() {
           <TeamCard
             key={team.groupId}
             team={team}
+            isAdmin={isAdmin}
             onUpdated={handleUpdated}
             onDeleted={handleDeleted}
           />

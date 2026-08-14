@@ -14,6 +14,7 @@ import PeopleAltIcon from '@material-ui/icons/PeopleAlt';
 import ExitToAppIcon from '@material-ui/icons/ExitToApp';
 import { SidebarSearchModal } from '@backstage/plugin-search';
 import { NotificationsSidebarItem } from '@backstage/plugin-notifications';
+import { getSession } from '../auth/LoginGate';
 
 function SignOutButton() {
   const handleSignOut = () => {
@@ -53,6 +54,7 @@ export const SidebarContent = NavContentBlueprint.make({
       const nav = navItems.withComponent(item => (
         <SidebarItem icon={() => item.icon} to={item.href} text={item.title} />
       ));
+      const isAdmin = getSession()?.isAdmin ?? false;
 
       // Skipped items
       nav.take('page:search'); // Using search modal instead

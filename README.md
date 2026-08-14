@@ -25,7 +25,7 @@ A Backstage-based Internal Developer Portal for The Yellow Network (TYN). Teams 
 | Feature | Status | Notes |
 |---|---|---|
 | Team credential login | Done | 5 pre-seeded teams; manage via UI |
-| Team & member management UI | Done | `/teams` page — add/remove members, create teams |
+| Team & member management UI | Done | `/teams` — all teams can view; only `platform-admin` can edit |
 | Next.js scaffolder template | Done | Runs out of the box with nifo design system |
 | FastAPI scaffolder template | Done | `docker compose up` and it runs |
 | Umbrella repo (git submodules) | Done | Every new project auto-added under `labs/` |
@@ -267,9 +267,38 @@ Each team logs in with their shared team credentials at the login screen. After 
 | Team Delta | `team-delta` | `tyn@delta2026` |
 | Team Epsilon | `team-epsilon` | `tyn@epsilon2026` |
 
-### Managing Teams (no code or restarts needed)
+### Admin vs. regular team access
 
-Navigate to **Teams** in the sidebar (or go to `/teams`).
+Access to the Teams page (`/teams`) is role-based:
+
+| Role | Can see | Can edit |
+|---|---|---|
+| **platform-admin** | All teams + members | Create teams, delete teams, add/remove members |
+| **Any other team** | All teams + members | Nothing (read-only) |
+
+The admin group is set in `app-config.yaml`:
+
+```yaml
+credentialsAuth:
+  adminGroupId: platform-admin   # whichever groupId is the admin
+```
+
+When a team logs in, the backend checks `group_id === adminGroupId` and returns `isAdmin: true` in the login response. The frontend reads this from `sessionStorage` and shows/hides all edit controls accordingly. No page reload or code change is needed when switching which team is admin — just change `adminGroupId` in the config and restart.
+
+### Creating the platform-admin account
+
+The first time you run the portal, create the admin team via the Teams UI (before any restrictions are visible, or by temporarily setting `adminGroupId` to your own team):
+
+1. Go to `/teams` → **+ New Team**
+2. Set **Group ID** to `platform-admin` (must match `adminGroupId` exactly)
+3. Set a strong password
+4. Click **Create Team**
+
+After this, only the `platform-admin` account can make changes to teams.
+
+### Managing Teams (admin only)
+
+Navigate to **Teams** in the sidebar (or go to `/teams`). Sign in as `platform-admin` to see edit controls.
 
 **Create a new team:**
 1. Click **+ New Team**
@@ -281,12 +310,12 @@ Navigate to **Teams** in the sidebar (or go to `/teams`).
 - On the team's card, type the member's name in the input field and press Enter or Add
 
 **Remove a member:**
-- Click the **x** on any member chip
+- Click the **×** on any member chip
 
 **Delete a team:**
 - Click **Delete** on the card, then confirm with **Yes**
 
-Teams and members are stored in `backstage-local.db` (SQLite) and survive restarts.
+Teams and members are stored in SQLite (in `packages/backend/db/`) and survive restarts.
 
 ### Updating names in the Backstage Catalog
 
@@ -804,8 +833,8 @@ Set in `app-config.local.yaml` for local dev. Use actual env vars in production.
 
 | I want to... | Go to... |
 |---|---|
-| Add/remove team members | Sidebar -> Teams |
-| Create a new team | Sidebar -> Teams -> + New Team |
+| Add/remove team members | Sidebar -> Teams (sign in as `platform-admin`) |
+| Create a new team | Sidebar -> Teams -> + New Team (admin only) |
 | Create a new frontend app | Sidebar -> Create -> Next.js Frontend |
 | Create a new backend service | Sidebar -> Create -> FastAPI Backend |
 | See all projects and owners | Sidebar -> Catalog |

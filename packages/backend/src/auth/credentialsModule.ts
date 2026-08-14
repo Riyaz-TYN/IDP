@@ -93,6 +93,10 @@ export const credentialsAuthPlugin = createBackendPlugin({
 
         // ── Auth ─────────────────────────────────────────────────────────────
 
+        const adminGroupId = (() => {
+          try { return config.getString('credentialsAuth.adminGroupId'); } catch { return 'platform-admin'; }
+        })();
+
         router.post('/login', async (req, res) => {
           const { username, password } = req.body ?? {};
           const team = await db('tyn_teams').where({ username, password }).first() as TeamRow | undefined;
@@ -108,6 +112,7 @@ export const credentialsAuthPlugin = createBackendPlugin({
             groupId:     team.group_id,
             displayName: team.display_name,
             members,
+            isAdmin:     team.group_id === adminGroupId,
           });
         });
 
