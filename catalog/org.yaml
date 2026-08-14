@@ -1,0 +1,319 @@
+# ─── TYN / NiFo Developer Teams ─────────────────────────────────────────────
+# Update member names and usernames to match your actual team members.
+# After editing, restart Backstage — the catalog will re-ingest this file.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Team Alpha ────────────────────────────────────────────────────────────────
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: team-alpha
+  title: Team Alpha
+  description: NiFo product team Alpha
+spec:
+  type: team
+  profile:
+    displayName: Team Alpha
+  children: []
+  members:
+    - alpha-member-1
+    - alpha-member-2
+    - alpha-member-3
+    - alpha-member-4
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: alpha-member-1
+  title: "Member 1 (Alpha)"   # replace with real name
+spec:
+  profile:
+    displayName: "Member 1"
+    email: member1@theyellownetwork.com
+  memberOf: [team-alpha]
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: alpha-member-2
+  title: "Member 2 (Alpha)"
+spec:
+  profile:
+    displayName: "Member 2"
+    email: member2@theyellownetwork.com
+  memberOf: [team-alpha]
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: alpha-member-3
+  title: "Member 3 (Alpha)"
+spec:
+  profile:
+    displayName: "Member 3"
+    email: member3@theyellownetwork.com
+  memberOf: [team-alpha]
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: alpha-member-4
+  title: "Member 4 (Alpha)"
+spec:
+  profile:
+    displayName: "Member 4"
+    email: member4@theyellownetwork.com
+  memberOf: [team-alpha]
+
+# ── Team Beta ─────────────────────────────────────────────────────────────────
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: team-beta
+  title: Team Beta
+  description: NiFo product team Beta
+spec:
+  type: team
+  profile:
+    displayName: Team Beta
+  children: []
+  members:
+    - beta-member-1
+    - beta-member-2
+    - beta-member-3
+    - beta-member-4
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: beta-member-1
+  title: "Member 1 (Beta)"
+spec:
+  profile:
+    displayName: "Member 1"
+    email: beta-member1@theyellownetwork.com
+  memberOf: [team-beta]
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: beta-member-2
+  title: "Member 2 (Beta)"
+spec:
+  profile:
+    displayName: "Member 2"
+    email: beta-member2@theyellownetwork.com
+  memberOf: [team-beta]
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: beta-member-3
+  title: "Member 3 (Beta)"
+spec:
+  profile:
+    displayName: "Member 3"
+    email: beta-member3@theyellownetwork.com
+  memberOf: [team-beta]
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: beta-member-4
+  title: "Member 4 (Beta)"
+spec:
+  profile:
+    displayName: "Member 4"
+    email: beta-member4@theyellownetwork.com
+  memberOf: [team-beta]
+
+# ── Team Gamma ────────────────────────────────────────────────────────────────
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: team-gamma
+  title: Team Gamma
+  description: NiFo product team Gamma
+spec:
+  type: team
+  profile:
+    displayName: Team Gamma
+  children: []
+  members:
+    - gamma-member-1
+    - gamma-member-2
+    - gamma-member-3
+    - gamma-member-4
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: gamma-member-1
+  title: "Member 1 (Gamma)"
+spec:
+  profile:
+    displayName: "Member 1"
+    email: gamma-member1@theyellownetwork.com
+  memberOf: [team-gamma]
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: gamma-member-2
+  title: "Member 2 (Gamma)"
+spec:
+  profile:
+    displayName: "Member 2"
+    email: gamma-member2@theyellownetwork.com
+  memberOf: [team-gamma]
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: gamma-member-3
+  title: "Member 3 (Gamma)"
+spec:
+  profile:
+    displayName: "Member 3"
+    email: gamma-member3@theyellownetwork.com
+  memberOf: [team-gamma]
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: gamma-member-4
+  title: "Member 4 (Gamma)"
+spec:
+  profile:
+    displayName: "Member 4"
+    email: gamma-member4@theyellownetwork.com
+  memberOf: [team-gamma]
+
+# ── Team Delta ────────────────────────────────────────────────────────────────
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: team-delta
+  title: Team Delta
+  description: NiFo product team Delta
+spec:
+  type: team
+  profile:
+    displayName: Team Delta
+  children: []
+  members:
+    - delta-member-1
+    - delta-member-2
+    - delta-member-3
+    - delta-member-4
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: delta-member-1
+  title: "Member 1 (Delta)"
+spec:
+  profile:
+    displayName: "Member 1"
+    email: delta-member1@theyellownetwork.com
+  memberOf: [team-delta]
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: delta-member-2
+  title: "Member 2 (Delta)"
+spec:
+  profile:
+    displayName: "Member 2"
+    email: delta-member2@theyellownetwork.com
+  memberOf: [team-delta]
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: delta-member-3
+  title: "Member 3 (Delta)"
+spec:
+  profile:
+    displayName: "Member 3"
+    email: delta-member3@theyellownetwork.com
+  memberOf: [team-delta]
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: delta-member-4
+  title: "Member 4 (Delta)"
+spec:
+  profile:
+    displayName: "Member 4"
+    email: delta-member4@theyellownetwork.com
+  memberOf: [team-delta]
+
+# ── Team Epsilon ──────────────────────────────────────────────────────────────
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: team-epsilon
+  title: Team Epsilon
+  description: NiFo product team Epsilon
+spec:
+  type: team
+  profile:
+    displayName: Team Epsilon
+  children: []
+  members:
+    - epsilon-member-1
+    - epsilon-member-2
+    - epsilon-member-3
+    - epsilon-member-4
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: epsilon-member-1
+  title: "Member 1 (Epsilon)"
+spec:
+  profile:
+    displayName: "Member 1"
+    email: epsilon-member1@theyellownetwork.com
+  memberOf: [team-epsilon]
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: epsilon-member-2
+  title: "Member 2 (Epsilon)"
+spec:
+  profile:
+    displayName: "Member 2"
+    email: epsilon-member2@theyellownetwork.com
+  memberOf: [team-epsilon]
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: epsilon-member-3
+  title: "Member 3 (Epsilon)"
+spec:
+  profile:
+    displayName: "Member 3"
+    email: epsilon-member3@theyellownetwork.com
+  memberOf: [team-epsilon]
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: epsilon-member-4
+  title: "Member 4 (Epsilon)"
+spec:
+  profile:
+    displayName: "Member 4"
+    email: epsilon-member4@theyellownetwork.com
+  memberOf: [team-epsilon]

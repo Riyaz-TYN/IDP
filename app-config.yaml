@@ -38,7 +38,7 @@ backend:
   # The production database configuration is stored in app-config.production.yaml
   database:
     client: better-sqlite3
-    connection: ':memory:'
+    connection: './backstage-local.db'
   # see https://backstage.io/docs/ai/mcp-actions#actions-configuration for more details
   actions:
     pluginSources:
@@ -83,11 +83,36 @@ auth:
     # See https://backstage.io/docs/auth/guest/provider
     guest: {}
 
-# Simple credential-based login gate — temporary until AWS IAM is configured.
-# Set actual values in app-config.local.yaml (gitignored).
+# Team credential login gate — temporary until AWS IAM is configured.
+# Define actual team passwords in app-config.local.yaml (gitignored).
+# Each team logs in with their username/password and sees their members + projects.
 credentialsAuth:
-  username: ${CREDENTIALS_USERNAME}
-  password: ${CREDENTIALS_PASSWORD}
+  teams:
+    - username: team-alpha
+      password: ${TEAM_ALPHA_PASSWORD}
+      groupId: team-alpha
+      displayName: Team Alpha
+      members: ["Member 1", "Member 2", "Member 3", "Member 4"]
+    - username: team-beta
+      password: ${TEAM_BETA_PASSWORD}
+      groupId: team-beta
+      displayName: Team Beta
+      members: ["Member 1", "Member 2", "Member 3", "Member 4"]
+    - username: team-gamma
+      password: ${TEAM_GAMMA_PASSWORD}
+      groupId: team-gamma
+      displayName: Team Gamma
+      members: ["Member 1", "Member 2", "Member 3", "Member 4"]
+    - username: team-delta
+      password: ${TEAM_DELTA_PASSWORD}
+      groupId: team-delta
+      displayName: Team Delta
+      members: ["Member 1", "Member 2", "Member 3", "Member 4"]
+    - username: team-epsilon
+      password: ${TEAM_EPSILON_PASSWORD}
+      groupId: team-epsilon
+      displayName: Team Epsilon
+      members: ["Member 1", "Member 2", "Member 3", "Member 4"]
   # see https://backstage.io/docs/ai/mcp-actions#client-id-metadata-documents
   # to learn more about client id metadata documents
   experimentalClientIdMetadataDocuments:
@@ -142,6 +167,12 @@ catalog:
     # Local example organizational data
     - type: file
       target: ../../examples/org.yaml
+      rules:
+        - allow: [User, Group]
+
+    # TYN / NiFo team org structure — edit catalog/org.yaml with real names
+    - type: file
+      target: ../../catalog/org.yaml
       rules:
         - allow: [User, Group]
 

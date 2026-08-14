@@ -2,11 +2,56 @@ import React, { useState } from 'react';
 
 const SESSION_KEY = 'tyn-auth';
 
-function LoginPage({ onSuccess }: { onSuccess: () => void }) {
+interface TeamSession {
+  groupId: string;
+  displayName: string;
+  members: string[];
+}
+
+function getSession(): TeamSession | null {
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+// ─── Team Banner (shown above Backstage after login) ──────────────────────────
+
+function TeamBanner({ session }: { session: TeamSession }) {
+  const handleLogout = () => {
+    sessionStorage.removeItem(SESSION_KEY);
+    window.location.reload();
+  };
+
+  return (
+    <div style={styles.banner}>
+      <div style={styles.bannerLeft}>
+        <div style={styles.bannerIcon}>
+          {session.displayName.charAt(0).toUpperCase()}
+        </div>
+        <div>
+          <span style={styles.bannerTeam}>{session.displayName}</span>
+          <span style={styles.bannerMembers}>
+            {session.members.join(' · ')}
+          </span>
+        </div>
+      </div>
+      <button style={styles.bannerLogout} onClick={handleLogout}>
+        Sign out
+      </button>
+    </div>
+  );
+}
+
+// ─── Login Page ───────────────────────────────────────────────────────────────
+
+function LoginPage({ onSuccess }: { onSuccess: (session: TeamSession) => void }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [error, setError]       = useState('');
+  const [loading, setLoading]   = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,8 +64,14 @@ function LoginPage({ onSuccess }: { onSuccess: () => void }) {
         body: JSON.stringify({ username, password }),
       });
       if (res.ok) {
-        sessionStorage.setItem(SESSION_KEY, 'true');
-        onSuccess();
+        const data = await res.json();
+        const session: TeamSession = {
+          groupId:     data.groupId,
+          displayName: data.displayName,
+          members:     data.members,
+        };
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+        onSuccess(session);
       } else {
         setError('Invalid username or password.');
       }
@@ -36,16 +87,13 @@ function LoginPage({ onSuccess }: { onSuccess: () => void }) {
       <div style={styles.card}>
         {/* Logo */}
         <div style={styles.logoRow}>
-          <div style={styles.logoIcon}>Y</div>
-          <span style={styles.logoText}>
-            the <span style={styles.logoYellow}>yellow</span> network
-          </span>
+          <div style={styles.logoIcon}>N</div>
+          <span style={styles.logoText}>NiFo · IDP</span>
         </div>
-
-        <p style={styles.tagline}>INTERNAL DEVELOPER PORTAL</p>
+        <p style={styles.tagline}>THE YELLOW NETWORK · INTERNAL DEVELOPER PORTAL</p>
 
         <form onSubmit={handleSubmit} style={styles.form}>
-          <label style={styles.label}>Username</label>
+          <label style={styles.label}>Team Username</label>
           <input
             style={styles.input}
             type="text"
@@ -53,7 +101,7 @@ function LoginPage({ onSuccess }: { onSuccess: () => void }) {
             autoFocus
             value={username}
             onChange={e => setUsername(e.target.value)}
-            placeholder="tyn-developers"
+            placeholder="e.g. team-alpha"
             required
           />
 
@@ -76,45 +124,50 @@ function LoginPage({ onSuccess }: { onSuccess: () => void }) {
         </form>
 
         <p style={styles.footer}>
-          Access restricted to The Yellow Network developers.
+          Each team has their own credentials.<br />
+          Contact your IDP admin if you need access.
         </p>
       </div>
     </div>
   );
 }
 
-export function LoginGate({ children }: { children: React.ReactNode }) {
-  const [authed, setAuthed] = useState(
-    sessionStorage.getItem(SESSION_KEY) === 'true',
-  );
+// ─── Gate ─────────────────────────────────────────────────────────────────────
 
-  if (!authed) {
-    return <LoginPage onSuccess={() => setAuthed(true)} />;
+export function LoginGate({ children }: { children: React.ReactNode }) {
+  const [session, setSession] = useState<TeamSession | null>(getSession);
+
+  if (!session) {
+    return <LoginPage onSuccess={setSession} />;
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      <TeamBanner session={session} />
+      {children}
+    </>
+  );
 }
 
-// ─── Styles ──────────────────────────────────────────────────────────────────
+// ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles: Record<string, React.CSSProperties> = {
+  // Login page
   root: {
     minHeight: '100vh',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    background: '#0d1b2e',
-    fontFamily: "'Arial Black', Arial, sans-serif",
+    background: '#f7f9fc',
+    fontFamily: 'Inter, system-ui, sans-serif',
   },
   card: {
-    background: '#1a2d4a',
-    borderRadius: 12,
+    background: '#ffffff',
+    borderRadius: 16,
     padding: '48px 40px',
-    width: 380,
-    boxShadow: '0 8px 40px rgba(0,0,0,0.5)',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 0,
+    width: 400,
+    boxShadow: '0 20px 45px rgba(16,35,63,0.12)',
+    border: '1px solid #e2e8f0',
   },
   logoRow: {
     display: 'flex',
@@ -123,13 +176,13 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: 4,
   },
   logoIcon: {
-    background: '#c8e600',
-    color: '#0d1b2e',
+    background: '#10233F',
+    color: '#22D3EE',
     fontWeight: 900,
     fontSize: 18,
     width: 36,
     height: 36,
-    borderRadius: 6,
+    borderRadius: 8,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -137,80 +190,117 @@ const styles: Record<string, React.CSSProperties> = {
   },
   logoText: {
     fontSize: 18,
-    fontWeight: 900,
-    color: '#ffffff',
+    fontWeight: 700,
+    color: '#0f172a',
     letterSpacing: '-0.3px',
-  },
-  logoYellow: {
-    background: '#c8e600',
-    color: '#0d1b2e',
-    borderRadius: 4,
-    padding: '0 4px',
   },
   tagline: {
     fontSize: 9,
-    letterSpacing: '2.5px',
-    color: 'rgba(255,255,255,0.5)',
+    letterSpacing: '1.5px',
+    color: '#94a3b8',
     marginTop: 4,
     marginBottom: 32,
-    fontFamily: 'Arial, sans-serif',
-    fontWeight: 700,
+    fontWeight: 600,
   },
   form: {
     display: 'flex',
     flexDirection: 'column',
-    gap: 0,
   },
   label: {
     fontSize: 12,
-    fontWeight: 700,
-    color: 'rgba(255,255,255,0.7)',
+    fontWeight: 600,
+    color: '#475569',
     marginBottom: 6,
-    fontFamily: 'Arial, sans-serif',
-    letterSpacing: '0.5px',
+    letterSpacing: '0.4px',
     textTransform: 'uppercase',
   },
   input: {
-    background: '#0d1b2e',
-    border: '1.5px solid #2a3f5f',
-    borderRadius: 6,
-    color: '#ffffff',
-    fontSize: 15,
-    padding: '11px 14px',
-    marginBottom: 18,
+    background: '#f8fafc',
+    border: '1.5px solid #e2e8f0',
+    borderRadius: 8,
+    color: '#0f172a',
+    fontSize: 14,
+    padding: '10px 13px',
+    marginBottom: 16,
     outline: 'none',
-    fontFamily: 'Arial, sans-serif',
+    fontFamily: 'Inter, sans-serif',
     width: '100%',
     boxSizing: 'border-box',
+    transition: 'border-color 0.15s',
   },
   error: {
-    color: '#ff6b6b',
+    color: '#ef4444',
     fontSize: 13,
     marginBottom: 12,
-    fontFamily: 'Arial, sans-serif',
-    fontWeight: 600,
+    fontWeight: 500,
   },
   button: {
-    background: '#c8e600',
-    color: '#0d1b2e',
+    background: '#0070C0',
+    color: '#ffffff',
     border: 'none',
-    borderRadius: 6,
-    fontSize: 15,
-    fontWeight: 900,
-    padding: '13px 0',
+    borderRadius: 8,
+    fontSize: 14,
+    fontWeight: 600,
+    padding: '12px 0',
     cursor: 'pointer',
     marginTop: 4,
-    fontFamily: "'Arial Black', Arial, sans-serif",
-    letterSpacing: '0.3px',
-    transition: 'opacity 0.15s',
+    fontFamily: 'Inter, sans-serif',
     width: '100%',
+    transition: 'background 0.15s',
   },
   footer: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.3)',
+    fontSize: 12,
+    color: '#94a3b8',
     textAlign: 'center',
     marginTop: 24,
-    fontFamily: 'Arial, sans-serif',
-    lineHeight: 1.5,
+    lineHeight: 1.6,
+  },
+  // Team banner
+  banner: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '0 24px',
+    height: 40,
+    background: '#10233F',
+    fontFamily: 'Inter, sans-serif',
+    flexShrink: 0,
+  },
+  bannerLeft: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+  },
+  bannerIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    background: '#22D3EE',
+    color: '#071A2F',
+    fontWeight: 700,
+    fontSize: 12,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bannerTeam: {
+    color: '#ffffff',
+    fontWeight: 600,
+    fontSize: 13,
+    marginRight: 12,
+  },
+  bannerMembers: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 12,
+  },
+  bannerLogout: {
+    background: 'transparent',
+    border: '1px solid rgba(255,255,255,0.2)',
+    borderRadius: 6,
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 11,
+    padding: '3px 10px',
+    cursor: 'pointer',
+    fontFamily: 'Inter, sans-serif',
   },
 };
