@@ -1,3 +1,6 @@
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+
 interface HeroSectionProps {
   title: string;
   description: string;
@@ -6,21 +9,21 @@ interface HeroSectionProps {
 export function HeroSection({ title, description }: HeroSectionProps) {
   return (
     <section className="flex flex-col items-center justify-center min-h-[80vh] px-6 text-center">
-      <div className="mb-4 inline-block rounded-full bg-tyn-navy-light px-4 py-1 text-sm text-tyn-yellow font-semibold tracking-widest uppercase">
+      <Badge variant="outline" className="mb-6 tracking-widest uppercase text-xs">
         The Yellow Network
-      </div>
+      </Badge>
 
-      <h1 className="text-5xl font-black text-white mb-4 leading-tight">
+      <h1 className="text-5xl font-black text-foreground mb-4 leading-tight">
         {title}
       </h1>
 
-      <p className="text-lg text-gray-400 max-w-xl mb-10">
+      <p className="text-lg text-muted-foreground max-w-xl mb-10">
         {description}
       </p>
 
-      <div className="flex items-center gap-3">
-        <span className="inline-block h-2 w-2 rounded-full bg-tyn-yellow animate-pulse" />
-        <span className="text-sm text-gray-500">Ready to build</span>
+      <div className="flex items-center gap-4">
+        <Button size="lg">Get Started</Button>
+        <Button size="lg" variant="outline">Learn More</Button>
       </div>
     </section>
   );

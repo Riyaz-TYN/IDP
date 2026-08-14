@@ -3,7 +3,7 @@ kind: Template
 metadata:
   name: fastapi-modular-template
   title: FastAPI Backend (Modular Monolith)
-  description: Production-ready FastAPI service — modular domain structure, SQLAlchemy async, Alembic migrations. Runs with `docker compose up` immediately.
+  description: Production-ready FastAPI service — modular domain structure, SQLAlchemy async, Alembic migrations. Runs with `docker compose up` immediately. Auto-added to the umbrella repo under labs/backend/.
   tags:
     - fastapi
     - backend
@@ -56,15 +56,22 @@ spec:
           port: ${{ parameters.port if parameters.port else 8000 }}
           moduleName: ${{ parameters.name | replace('-', '_') }}
 
-    # TODO: Replace with publish:awsCodeCommit targeting labs/${{ parameters.name }}
     - id: publish
-      name: Publish Repository (GitHub — swap for CodeCommit later)
+      name: Publish to GitHub
       action: publish:github
       input:
         description: ${{ parameters.description if parameters.description else parameters.name }}
         repoUrl: github.com?repo=${{ parameters.name }}&owner=Riyaz-TYN
         defaultBranch: main
         repoVisibility: private
+
+    - id: add-to-umbrella
+      name: Add to Umbrella Repo (labs/backend)
+      action: monorepo:submodule:add
+      input:
+        repoUrl: https://github.com/Riyaz-TYN/Umberella-Repo.git
+        submoduleUrl: ${{ steps['publish'].output.remoteUrl }}
+        submodulePath: labs/backend/${{ parameters.name }}
 
     - id: register
       name: Register in Backstage Catalog

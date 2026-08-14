@@ -3,12 +3,13 @@ kind: Template
 metadata:
   name: nextjs-modular-template
   title: Next.js Frontend (Modular Monolith)
-  description: Production-ready Next.js 14 app — modular structure, TYN branding, optional shared UI components. Runs on first `npm install && npm run dev`.
+  description: Production-ready Next.js 14 app — shadcn/ui + TYN Tailwind config included by default. Runs on first `npm install && npm run dev`. Auto-added to the umbrella repo under labs/frontend/.
   tags:
     - nextjs
     - frontend
     - typescript
     - tailwind
+    - shadcn
 spec:
   owner: group:platform-team
   type: website
@@ -38,20 +39,6 @@ spec:
             catalogFilter:
               kind: Group
 
-    - title: Shared UI Components
-      description: Select TYN shared components to include in this repo. They are copied as local files now; will be replaced with @tyn/ui-* CodeArtifact packages later.
-      properties:
-        sharedButton:
-          title: TYN Button
-          description: Company-standard Button component with TYN branding and variants.
-          type: boolean
-          default: false
-        sharedNavbar:
-          title: TYN Navbar
-          description: Company-standard top navigation bar with logo and links.
-          type: boolean
-          default: false
-
   steps:
     - id: fetch-base
       name: Fetch Next.js Skeleton
@@ -62,38 +49,23 @@ spec:
           name: ${{ parameters.name }}
           description: ${{ parameters.description if parameters.description else 'A Next.js application by The Yellow Network' }}
           owner: ${{ parameters.owner }}
-          sharedButton: ${{ parameters.sharedButton }}
-          sharedNavbar: ${{ parameters.sharedNavbar }}
 
-    - id: fetch-shared-button
-      name: Add TYN Button Component
-      if: ${{ parameters.sharedButton }}
-      action: fetch:template
-      input:
-        url: ./shared-components/button
-        targetPath: ./src/shared/components
-        values:
-          name: ${{ parameters.name }}
-
-    - id: fetch-shared-navbar
-      name: Add TYN Navbar Component
-      if: ${{ parameters.sharedNavbar }}
-      action: fetch:template
-      input:
-        url: ./shared-components/navbar
-        targetPath: ./src/shared/components
-        values:
-          name: ${{ parameters.name }}
-
-    # TODO: Replace with publish:awsCodeCommit targeting labs/${{ parameters.name }}
     - id: publish
-      name: Publish Repository (GitHub — swap for CodeCommit later)
+      name: Publish to GitHub
       action: publish:github
       input:
         description: ${{ parameters.description if parameters.description else parameters.name }}
         repoUrl: github.com?repo=${{ parameters.name }}&owner=Riyaz-TYN
         defaultBranch: main
         repoVisibility: private
+
+    - id: add-to-umbrella
+      name: Add to Umbrella Repo (labs/frontend)
+      action: monorepo:submodule:add
+      input:
+        repoUrl: https://github.com/Riyaz-TYN/Umberella-Repo.git
+        submoduleUrl: ${{ steps['publish'].output.remoteUrl }}
+        submodulePath: labs/frontend/${{ parameters.name }}
 
     - id: register
       name: Register in Backstage Catalog

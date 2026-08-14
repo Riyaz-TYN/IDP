@@ -3,10 +3,46 @@
 @tailwind utilities;
 
 @layer base {
-  html {
-    font-family: Inter, Arial, sans-serif;
+  :root {
+    /* TYN dark theme — navy base, yellow accent */
+    --background:         214 60% 12%;   /* #0d1b2e */
+    --foreground:         0   0%  100%;
+
+    --card:               214 44% 16%;
+    --card-foreground:    0   0%  100%;
+
+    --popover:            214 44% 14%;
+    --popover-foreground: 0   0%  100%;
+
+    --primary:            73  100% 40%;  /* #c8e600 */
+    --primary-foreground: 214 60% 12%;
+
+    --secondary:          214 44% 18%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted:              214 44% 20%;
+    --muted-foreground:   215 16% 60%;
+
+    --accent:             214 44% 24%;
+    --accent-foreground:  0   0%  100%;
+
+    --destructive:        0   72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border:             214 44% 22%;
+    --input:              214 44% 18%;
+    --ring:               73  100% 40%;
+
+    --radius:             0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
   }
   body {
-    @apply bg-tyn-navy text-white;
+    @apply bg-background text-foreground;
+    font-family: Inter, Arial, sans-serif;
   }
 }
