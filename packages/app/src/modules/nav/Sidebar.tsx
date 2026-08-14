@@ -3,7 +3,6 @@ import {
   SidebarDivider,
   SidebarGroup,
   SidebarItem,
-  SidebarScrollWrapper,
   SidebarSpace,
 } from '@backstage/core-components';
 import { NavContentBlueprint } from '@backstage/plugin-app-react';
@@ -35,10 +34,6 @@ export const SidebarContent = NavContentBlueprint.make({
             {nav.take('page:catalog')}
             {nav.take('page:scaffolder')}
             {nav.take('page:app/teams')}
-            <SidebarDivider />
-            <SidebarScrollWrapper>
-              {nav.rest({ sortBy: 'title' })}
-            </SidebarScrollWrapper>
           </SidebarGroup>
           <SidebarSpace />
           <SidebarDivider />

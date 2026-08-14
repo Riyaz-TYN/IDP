@@ -6,14 +6,27 @@ app:
   packages: all
 
   extensions:
-    # Configure the catalog index page to be the root page, this is normally mounted on /catalog
+    # Catalog is the root page
     - page:catalog:
         config:
           path: /
-    # Set NiFo light theme as the default
+    # NiFo light is the only theme
     - theme:nifo-light:
         config:
           defaultTheme: true
+    # Hide pages that are not set up yet
+    - page:kubernetes:
+        disabled: true
+    - page:techdocs:
+        disabled: true
+    - page:app-visualizer:
+        disabled: true
+    - nav-item:kubernetes:
+        disabled: true
+    - nav-item:techdocs:
+        disabled: true
+    - nav-item:app-visualizer:
+        disabled: true
 
 organization:
   name: My Company
