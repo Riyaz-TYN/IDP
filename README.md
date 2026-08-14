@@ -1,6 +1,6 @@
 # NiFo IDP — The Yellow Network Internal Developer Portal
 
-A Backstage-based Internal Developer Portal for The Yellow Network (TYN). Teams use it to scaffold new Next.js and FastAPI projects, manage team members, and track all projects in a software catalog.
+A Backstage-based Internal Developer Portal for The Yellow Network (TYN). Teams log in with shared credentials, scaffold new Next.js and FastAPI projects, manage team members, and track all projects in a software catalog.
 
 ---
 
@@ -24,66 +24,70 @@ A Backstage-based Internal Developer Portal for The Yellow Network (TYN). Teams 
 
 | Feature | Status | Notes |
 |---|---|---|
-| Team credential login | Done | 5 pre-seeded teams; manage via UI |
-| Team & member management UI | Done | `/teams` — all teams can view; only `platform-admin` can edit |
-| Next.js scaffolder template | Done | Runs out of the box with nifo design system |
-| FastAPI scaffolder template | Done | `docker compose up` and it runs |
-| Umbrella repo (git submodules) | Done | Every new project auto-added under `labs/` |
-| Backstage catalog + teams | Done | `catalog/org.yaml` — teams and members |
-| NiFo design theme in Backstage | Done | `#0070C0` blue, `#10233F` navy sidebar |
-| GitHub integration | Done | Repos created under `Riyaz-TYN` |
-| AWS CodeCommit integration | Pending | See section 8 |
-| AWS IAM authentication | Pending | See section 9 |
+| Team credential login | ✅ Done | Custom login gate — each team has a shared username + password |
+| Sign Out | ✅ Done | Sign Out button in sidebar bottom — clears session |
+| Team & member management UI | ✅ Done | `/teams` — all teams view-only; `platform-admin` has full edit access |
+| Platform admin role | ✅ Done | `platform-admin` group controls team CRUD; set via `credentialsAuth.adminGroupId` |
+| Next.js scaffolder template | ✅ Done | Next.js 15, Tailwind, shadcn/ui, TanStack Query, Zustand — runs with `npm install && npm run dev` |
+| FastAPI scaffolder template | ✅ Done | FastAPI, SQLAlchemy async, Alembic, PostgreSQL — runs with `.venv` + uvicorn |
+| Umbrella repo (git submodules) | ✅ Done | Every new project auto-added to `Riyaz-TYN/Umberella-Repo` under `labs/` |
+| Backstage catalog | ✅ Done | All projects registered; teams/members in `catalog/org.yaml` |
+| NiFo design theme | ✅ Done | `#0070C0` blue, `#10233F` navy sidebar — consistent across portal + generated apps |
+| GitHub integration | ✅ Done | Repos created privately under `Riyaz-TYN` |
+| AWS CodeCommit integration | 🔲 Pending | Section 8 — 7 files to change |
+| AWS IAM authentication | 🔲 Pending | Section 9 — replaces LoginGate with Cognito/SSO |
 
 ---
 
 ## 2. Project Structure
 
 ```
-nifo-refractor/                  <- Backstage monorepo root
-├── app-config.yaml              <- Main config (committed)
-├── app-config.local.yaml        <- Local secrets — gitignored (passwords, tokens)
+nifo-refractor/                  ← Backstage monorepo root
+├── app-config.yaml              ← Main config (committed — no secrets)
+├── app-config.local.yaml        ← Local secrets — gitignored (never commit)
+├── app-config.production.yaml   ← Production overrides (PostgreSQL, env vars)
 ├── catalog/
-│   └── org.yaml                 <- TYN team & user entities (5 teams x 4 members)
+│   └── org.yaml                 ← TYN team & user entities for the Backstage catalog
+├── scripts/
+│   └── migrate-to-postgres.js   ← Migrates tyn_teams + tyn_members from SQLite to PostgreSQL
 ├── templates/
-│   ├── nextjs-template/         <- Next.js scaffolder template
-│   │   ├── template.yaml        <- Backstage template definition
-│   │   └── skeleton/            <- The actual generated project files
-│   └── fastapi-template/        <- FastAPI scaffolder template
+│   ├── nextjs-template/
+│   │   ├── template.yaml        ← Scaffolder template definition
+│   │   └── skeleton/            ← Files copied into every generated Next.js app
+│   └── fastapi-template/
 │       ├── template.yaml
-│       └── skeleton/
+│       └── skeleton/            ← Files copied into every generated FastAPI service
 ├── packages/
-│   ├── app/                     <- Backstage frontend (React)
+│   ├── app/                     ← Backstage frontend (React, port 3000)
 │   │   └── src/
-│   │       ├── App.tsx          <- Registers all feature modules
-│   │       ├── index.tsx        <- Wraps app with LoginGate
+│   │       ├── App.tsx          ← Registers feature modules (catalog, nav, theme, teams)
+│   │       ├── index.tsx        ← Entry point — wraps app with LoginGate
 │   │       └── modules/
-│   │           ├── auth/        <- LoginGate + TeamBanner
-│   │           ├── nav/         <- Sidebar layout
-│   │           ├── teams/       <- Teams management page (/teams)
-│   │           └── theme/       <- NiFo light theme (nifo-shared-ui colors)
-│   └── backend/
+│   │           ├── auth/        ← LoginGate (login form + session), getSession()
+│   │           ├── nav/         ← Sidebar with Sign Out button
+│   │           ├── teams/       ← Teams page (/teams) — admin edit, others read-only
+│   │           └── theme/       ← NiFo light theme
+│   └── backend/                 ← Backstage backend (Node.js, port 7007)
 │       └── src/
-│           ├── index.ts         <- Registers all backend plugins
+│           ├── index.ts         ← Registers all backend plugins
 │           ├── auth/
-│           │   └── credentialsModule.ts  <- Team login + CRUD API + SQLite storage
+│           │   └── credentialsModule.ts  ← Login API, team CRUD, SQLite storage, isAdmin flag
 │           └── actions/
-│               └── gitSubmodule.ts       <- monorepo:submodule:add scaffolder action
-└── packages/backend/db/         <- SQLite databases (gitignored, auto-created on first run)
+│               └── gitSubmodule.ts       ← Custom scaffolder action: monorepo:submodule:add
+└── packages/backend/db/         ← SQLite files (gitignored, auto-created on first run)
 ```
 
-**Separate repos:**
+**Separate repos (on the same machine):**
 
 ```
-E:/nifo-ref/umbrella/            <- Riyaz-TYN/Umberella-Repo
-├── labs/
-│   ├── frontend/                <- Every Next.js app added here as git submodule
-│   └── backend/                 <- Every FastAPI service added here as git submodule
-└── README.md
+E:/nifo-ref/umbrella/            ← Riyaz-TYN/Umberella-Repo (cloned separately)
+└── labs/
+    ├── frontend/                ← Every Next.js app added here as a git submodule
+    └── backend/                 ← Every FastAPI service added here as a git submodule
 
-E:/nifo-ref/nifo-shared-ui/      <- VarshiniRameshTYN/nifo-shared-ui
-├── src/global.css               <- Reference CSS variables (baked into skeleton)
-└── tailwind.config.ts           <- Reference Tailwind tokens (baked into skeleton)
+E:/nifo-ref/nifo-shared-ui/      ← VarshiniRameshTYN/nifo-shared-ui (reference only)
+├── src/global.css               ← CSS variables baked into Next.js skeleton
+└── tailwind.config.ts           ← Tailwind tokens baked into Next.js skeleton
 ```
 
 ---
@@ -92,20 +96,21 @@ E:/nifo-ref/nifo-shared-ui/      <- VarshiniRameshTYN/nifo-shared-ui
 
 ### Prerequisites
 
-- Node.js 20+
-- Yarn (via Corepack: `corepack enable`)
-- Git
+- **Node.js 20+**
+- **Yarn** — install via Corepack: `corepack enable && corepack prepare yarn@stable --activate`
+- **Git**
 
-### First-time setup
+### Step 1 — Clone and install
 
 ```bash
-# 1. Install dependencies
+git clone git@github.com:Riyaz-TYN/IDP.git nifo-refractor
+cd nifo-refractor
 yarn install
-
-# 2. Create your local config file (never commit this)
 ```
 
-Create `app-config.local.yaml` in the project root. **This file is git-ignored — never commit it. Share the actual passwords and tokens through a secure channel (direct message / password manager), not by sending this file.**
+### Step 2 — Create your local config file
+
+Create `app-config.local.yaml` in the project root. **This file is gitignored — never commit it.** Share passwords through a secure channel (direct message or password manager), not by sending this file.
 
 ```yaml
 credentialsAuth:
@@ -139,125 +144,98 @@ credentialsAuth:
 integrations:
   github:
     - host: github.com
-      token: YOUR_GITHUB_PAT_HERE   # see "Rotating credentials" below
+      token: YOUR_GITHUB_PAT_HERE   # see "Rotating GitHub credentials" below
 
 catalog:
   locations:
     - type: file
-      target: /absolute/path/to/nifo-refractor/examples/entities.yaml
+      target: C:/absolute/path/to/nifo-refractor/examples/entities.yaml
     - type: file
-      target: /absolute/path/to/nifo-refractor/examples/template/template.yaml
+      target: C:/absolute/path/to/nifo-refractor/examples/template/template.yaml
       rules:
         - allow: [Template]
     - type: file
-      target: /absolute/path/to/nifo-refractor/templates/react-template/template.yaml
+      target: C:/absolute/path/to/nifo-refractor/templates/react-template/template.yaml
       rules:
         - allow: [Template]
     - type: file
-      target: /absolute/path/to/nifo-refractor/templates/nextjs-template/template.yaml
+      target: C:/absolute/path/to/nifo-refractor/templates/nextjs-template/template.yaml
       rules:
         - allow: [Template]
     - type: file
-      target: /absolute/path/to/nifo-refractor/templates/fastapi-template/template.yaml
+      target: C:/absolute/path/to/nifo-refractor/templates/fastapi-template/template.yaml
       rules:
         - allow: [Template]
     - type: file
-      target: /absolute/path/to/nifo-refractor/examples/org.yaml
+      target: C:/absolute/path/to/nifo-refractor/examples/org.yaml
       rules:
         - allow: [User, Group]
     - type: file
-      target: /absolute/path/to/nifo-refractor/catalog/org.yaml
+      target: C:/absolute/path/to/nifo-refractor/catalog/org.yaml
       rules:
         - allow: [User, Group]
 ```
 
-> Replace `/absolute/path/to/nifo-refractor` with the actual full path on your machine (e.g. `e:/nifo-ref/nifo-refractor` on Windows or `/home/user/nifo-refractor` on Linux). Relative paths do not work in this section.
+> **Important:** Replace `C:/absolute/path/to/nifo-refractor` with the actual full path on your machine (e.g. `E:/nifo-ref/nifo-refractor` on Windows, `/home/user/nifo-refractor` on Linux). Relative paths do not work in `catalog.locations`.
 
-### What to share with a new developer / senior
-
-| What | How to share |
-|---|---|
-| **The codebase** | Clone from GitHub — `git clone git@github.com:Riyaz-TYN/IDP.git` |
-| **Team passwords** | Share verbally or via a password manager — NOT by sending the file |
-| **GitHub PAT** | Each developer generates their own (see Rotating credentials below) |
-| **`app-config.local.yaml`** | **Never share this file** — it contains live secrets. Share the template above and let them fill in their own values. |
-
-The developer only needs to clone the repo and create their own `app-config.local.yaml` following this template. Everything else is in the repository.
-
-### Rotating credentials (token expired or revoked)
-
-#### GitHub (current setup)
-
-The scaffolder uses a GitHub Personal Access Token (PAT) to create repos. PATs expire. When you see `HttpError: Bad credentials` in the scaffolder logs:
-
-1. Go to **github.com → Settings → Developer settings → Personal access tokens → Tokens (classic)**
-2. Click **Generate new token (classic)**
-3. Set an expiry and tick: ✅ `repo` (all sub-items) and ✅ `workflow`
-4. Copy the token
-5. Open `app-config.local.yaml` and replace the value under `integrations.github[].token`
-6. Restart `yarn start` — the new token is picked up immediately
-
-#### AWS CodeCommit (after migration to CodeCommit)
-
-CodeCommit supports two auth methods. Choose one:
-
-**Option A — IAM access keys** (for local dev without an EC2/ECS role):
-
-When you see `fatal: unable to access` or `403` errors in scaffolder logs:
-
-1. Go to **AWS Console → IAM → Users → your-user → Security credentials**
-2. Under **Access keys**, click **Create access key** (deactivate the old one after)
-3. Update `app-config.local.yaml`:
-
-```yaml
-integrations:
-  awsCodeCommit:
-    - host: git-codecommit.ap-south-1.amazonaws.com
-      region: ap-south-1
-      accessKeyId: AKIAxxx       # new key
-      secretAccessKey: yyy       # new secret
-```
-
-4. Restart `yarn start`
-
-**Option B — IAM role on EC2/ECS** (recommended for production — no key rotation needed):
-
-The EC2 instance or ECS task has an attached IAM role with `codecommit:*` permissions. AWS rotates the temporary credentials automatically. No `accessKeyId` or `secretAccessKey` in the config at all:
-
-```yaml
-integrations:
-  awsCodeCommit:
-    - host: git-codecommit.ap-south-1.amazonaws.com
-      region: ap-south-1
-      # No keys — role credentials are picked up automatically from instance metadata
-```
-
-If this stops working, the issue is the IAM role's trust policy or permissions, not a key — check CloudTrail for the actual error.
-
-**Option C — CodeCommit HTTPS Git credentials** (per-user, alternative to access keys):
-
-1. Go to **AWS Console → IAM → Users → your-user → Security credentials**
-2. Scroll to **HTTPS Git credentials for AWS CodeCommit**
-3. Click **Generate credentials**, download, use them as the `accessKeyId` / `secretAccessKey` in the config above
-
-### Start the portal
+### Step 3 — Start the portal
 
 ```bash
-# Start frontend (port 3000) and backend (port 7007) together
 yarn start
 ```
 
-Open [http://localhost:3000](http://localhost:3000). You will see the NiFo login page.
+This starts both the frontend (port 3000) and the backend (port 7007). Open [http://localhost:3000](http://localhost:3000) — you will see the NiFo login screen.
 
-> The SQLite databases are created automatically in `packages/backend/db/` on first run. Teams from `app-config.local.yaml` are seeded into `credentials-auth.sqlite` on first boot only. After that, manage teams through the UI at `/teams` — no restarts needed.
+> The SQLite databases are created automatically in `packages/backend/db/` on first run. Teams listed in `app-config.local.yaml` are seeded into the database **on first boot only**. After that, all team management is done through the `/teams` UI — no restarts needed.
+
+### Step 4 — Create the platform-admin account (first time only)
+
+The `platform-admin` account is the admin account that can create, edit, and delete teams. It is not seeded from config — create it via the API once after the first boot:
+
+```bash
+curl -s -X POST http://localhost:7007/api/credentials-auth/teams \
+  -H "Content-Type: application/json" \
+  -d '{"groupId":"platform-admin","username":"platform-admin","password":"YOUR_ADMIN_PASSWORD","displayName":"Platform Admin","members":["Your Name"]}'
+```
+
+Or log in as any team, go to `/teams`, and click **+ New Team** — set the Group ID to `platform-admin` exactly (it must match `credentialsAuth.adminGroupId` in `app-config.yaml`).
+
+### What to share with a new developer
+
+| What | How |
+|---|---|
+| **Codebase** | `git clone git@github.com:Riyaz-TYN/IDP.git` |
+| **Team passwords** | Share verbally or via a password manager — never the file |
+| **GitHub PAT** | Each developer generates their own (see below) |
+| **`app-config.local.yaml`** | Never share this file — share the template above, let them fill in their own paths and token |
+
+### Rotating GitHub credentials
+
+The scaffolder uses a GitHub PAT to create repos and push to the umbrella repo. When you see `HttpError: Bad credentials` in scaffolder logs:
+
+1. Go to **github.com → Settings → Developer settings → Personal access tokens → Tokens (classic)**
+2. Click **Generate new token (classic)**
+3. Set an expiry. Required scopes: ✅ `repo` (all sub-items) and ✅ `workflow`
+4. Copy the token immediately (shown only once)
+5. Open `app-config.local.yaml`, replace the value under `integrations.github[0].token`
+6. Restart `yarn start` — the new token takes effect immediately
+7. Revoke the old token from the GitHub settings page
+
+### Rotating AWS CodeCommit credentials (after migration)
+
+See section 8 — [Migrating to AWS CodeCommit](#8-migrating-to-aws-codecommit) for the three credential options (IAM access keys, IAM role, HTTPS Git credentials).
 
 ---
 
 ## 4. Team Login & Management
 
-### Login
+### How login works
 
-Each team logs in with their shared team credentials at the login screen. After login, a navy banner appears at the top with the team name and all members listed.
+The portal uses a custom login gate. There is no Backstage guest session — every user must log in with a team username and password. Session is stored in `sessionStorage` and cleared when the browser tab closes or when the user clicks **Sign Out** in the sidebar.
+
+### Default team credentials
+
+These are seeded on first boot from `app-config.local.yaml`. Update passwords in that file before first run, or change them via the API after.
 
 | Team | Username | Default Password |
 |---|---|---|
@@ -266,86 +244,69 @@ Each team logs in with their shared team credentials at the login screen. After 
 | Team Gamma | `team-gamma` | `tyn@gamma2026` |
 | Team Delta | `team-delta` | `tyn@delta2026` |
 | Team Epsilon | `team-epsilon` | `tyn@epsilon2026` |
+| Platform Admin | `platform-admin` | *(set when creating the account — see Step 4 above)* |
 
 ### Admin vs. regular team access
 
-Access to the Teams page (`/teams`) is role-based:
+| Role | Teams page | Create team | Delete team | Add/remove members |
+|---|---|---|---|---|
+| `platform-admin` | ✅ View all | ✅ Yes | ✅ Yes | ✅ Yes |
+| Any other team | ✅ View all | ❌ No | ❌ No | ❌ No |
 
-| Role | Can see | Can edit |
-|---|---|---|
-| **platform-admin** | All teams + members | Create teams, delete teams, add/remove members |
-| **Any other team** | All teams + members | Nothing (read-only) |
-
-The admin group is set in `app-config.yaml`:
+The admin group is configured in `app-config.yaml`:
 
 ```yaml
 credentialsAuth:
-  adminGroupId: platform-admin   # whichever groupId is the admin
+  adminGroupId: platform-admin   # change this to promote a different group to admin
 ```
 
-When a team logs in, the backend checks `group_id === adminGroupId` and returns `isAdmin: true` in the login response. The frontend reads this from `sessionStorage` and shows/hides all edit controls accordingly. No page reload or code change is needed when switching which team is admin — just change `adminGroupId` in the config and restart.
+To change which group is admin: update `adminGroupId` in `app-config.yaml` and restart `yarn start`. No code changes needed.
 
-### Creating the platform-admin account
+### Managing teams (platform-admin only)
 
-The first time you run the portal, create the admin team via the Teams UI (before any restrictions are visible, or by temporarily setting `adminGroupId` to your own team):
+Log in as `platform-admin`, then go to **Teams** in the sidebar.
 
-1. Go to `/teams` → **+ New Team**
-2. Set **Group ID** to `platform-admin` (must match `adminGroupId` exactly)
-3. Set a strong password
-4. Click **Create Team**
+**Create a new team** — click **+ New Team**, fill in Team Name, Group ID (e.g. `team-zeta`), Login Username, and Password. Add members and click **Create Team**.
 
-After this, only the `platform-admin` account can make changes to teams.
+**Add a member** — type the member's name in the input on the team card and press Enter or click Add.
 
-### Managing Teams (admin only)
+**Remove a member** — click the **×** on a member chip.
 
-Navigate to **Teams** in the sidebar (or go to `/teams`). Sign in as `platform-admin` to see edit controls.
+**Delete a team** — click **Delete** on the card, confirm with **Yes**.
 
-**Create a new team:**
-1. Click **+ New Team**
-2. Fill in: Team Name, Group ID (e.g. `team-zeta`), Login Username, Password
-3. Add members by typing a name and pressing Enter or clicking Add (any number of members)
-4. Click **Create Team**
+All changes are saved to SQLite immediately and survive restarts.
 
-**Add a member to an existing team:**
-- On the team's card, type the member's name in the input field and press Enter or Add
+### Updating the Backstage catalog
 
-**Remove a member:**
-- Click the **×** on any member chip
-
-**Delete a team:**
-- Click **Delete** on the card, then confirm with **Yes**
-
-Teams and members are stored in SQLite (in `packages/backend/db/`) and survive restarts.
-
-### Updating names in the Backstage Catalog
-
-The Backstage catalog (what you see in the **Catalog** page under groups) reads from `catalog/org.yaml`. Edit that file with real names and restart once. The Teams login page reads from the DB (managed via `/teams` UI).
+The Backstage catalog (what appears under **Catalog → Groups**) reads from `catalog/org.yaml`. The Teams page reads from the SQLite database. These are separate — edit `catalog/org.yaml` manually for real team names and restart once.
 
 ---
 
 ## 5. Creating a Project (Scaffolder)
 
-Go to **Create** in the sidebar and pick a template.
+Click **Create** in the sidebar and pick a template.
 
 ### Next.js Frontend (Modular Monolith)
 
-What gets created automatically:
-- A private GitHub repo under `Riyaz-TYN/<app-name>`
-- NiFo design system baked in (Tailwind config, CSS variables, shadcn components)
-- Modular monolith structure:
-  ```
-  src/
-  ├── app/             <- Next.js App Router (routing only)
-  ├── features/        <- Domain modules (e.g. features/billing/)
-  ├── components/
-  │   ├── ui/          <- shadcn components (Button, Badge, Card)
-  │   └── layout/      <- Navbar
-  └── lib/             <- Utilities, types
-  ```
-- Registered in the Backstage catalog under the chosen team
-- Added as a git submodule to `labs/frontend/<app-name>` in the umbrella repo
+What is created automatically when you fill in the form:
+
+1. A private GitHub repo under `Riyaz-TYN/<app-name>`
+2. NiFo design system baked in (Tailwind tokens, CSS variables, shadcn/ui components)
+3. Modular project structure ready to extend:
+   ```
+   src/
+   ├── app/             ← Next.js App Router (routing only — layouts + pages)
+   ├── features/        ← One folder per domain (e.g. features/billing/)
+   ├── components/
+   │   ├── ui/          ← Button, Badge, Card, Input, Label (shadcn/ui)
+   │   └── layout/      ← TYN Navbar
+   └── lib/             ← Axios instance, cn() utility
+   ```
+4. Registered in the Backstage catalog under the chosen owner team
+5. Added as a git submodule to `labs/frontend/<app-name>` in the umbrella repo
 
 **To run the generated app:**
+
 ```bash
 git clone https://github.com/Riyaz-TYN/<app-name>
 cd <app-name>
@@ -354,28 +315,51 @@ npm run dev
 # Open http://localhost:3000
 ```
 
+Copy `.env.example` to `.env.local` and set `NEXT_PUBLIC_API_URL` to your FastAPI backend URL.
+
 ### FastAPI Backend (Modular Monolith)
 
-What gets created automatically:
-- A private GitHub repo under `Riyaz-TYN/<service-name>`
-- Modular structure with strict layering:
-  ```
-  app/
-  ├── core/            <- config, database, dependencies
-  ├── modules/
-  │   └── <domain>/    <- router -> service -> repository -> models/schemas
-  └── shared/          <- shared exceptions, utilities
-  ```
-- SQLAlchemy async + Alembic migrations, Postgres via Docker Compose
-- Added as a git submodule to `labs/backend/<service-name>` in the umbrella repo
+What is created automatically:
+
+1. A private GitHub repo under `Riyaz-TYN/<service-name>`
+2. Modular domain structure with strict layering (router → service → repository → database):
+   ```
+   app/
+   ├── core/            ← config (pydantic-settings), database (SQLAlchemy async), deps
+   ├── modules/
+   │   └── <domain>/    ← models, schemas, repository, service, router
+   └── shared/          ← common exceptions
+   ```
+3. Alembic migrations pre-configured, example users module included
+4. Added as a git submodule to `labs/backend/<service-name>` in the umbrella repo
 
 **To run the generated service:**
+
 ```bash
 git clone https://github.com/Riyaz-TYN/<service-name>
 cd <service-name>
-docker compose up
+
+# Create virtual environment
+python -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Configure environment
+cp .env.example .env
+# Edit .env — set DATABASE_URL to your PostgreSQL instance
+
+# Run migrations (creates tables)
+alembic upgrade head
+
+# Start the server
+uvicorn app.main:app --reload --port 8000
+
 # Open http://localhost:8000/docs  (Swagger UI)
 ```
+
+> **Docker is optional.** A `Dockerfile` and `docker-compose.yml` are included if you prefer containers — `docker compose up` starts the API and a PostgreSQL database together. But the default path is `.venv` + uvicorn above.
 
 ---
 
@@ -383,83 +367,84 @@ docker compose up
 
 **Remote:** `https://github.com/Riyaz-TYN/Umberella-Repo`
 
-Every project created through the Backstage scaffolder is automatically added as a git submodule:
+Every project scaffolded through the IDP is automatically added as a git submodule:
 
 ```
 Umberella-Repo/
 └── labs/
     ├── frontend/
-    │   ├── billing-portal/     <- submodule -> github.com/Riyaz-TYN/billing-portal
-    │   ├── dashboard-ui/       <- submodule -> github.com/Riyaz-TYN/dashboard-ui
+    │   ├── billing-portal/     ← submodule → github.com/Riyaz-TYN/billing-portal
+    │   ├── dashboard-ui/       ← submodule → github.com/Riyaz-TYN/dashboard-ui
     │   └── ...
     └── backend/
-        ├── user-service/       <- submodule -> github.com/Riyaz-TYN/user-service
+        ├── user-service/       ← submodule → github.com/Riyaz-TYN/user-service
         └── ...
 ```
 
-### Cloning everything (for a new developer joining a team)
+### Cloning all projects (for a new developer)
 
 ```bash
-# Clone the umbrella repo with all submodules at once
+# Clone umbrella repo with all submodules at once
 git clone --recurse-submodules https://github.com/Riyaz-TYN/Umberella-Repo
 
-# If you already cloned without submodules:
+# If you already cloned without --recurse-submodules
 git submodule update --init --recursive
 
-# To update all submodules to their latest commits:
+# Pull latest commits from all submodules
 git submodule update --remote
 ```
 
-### How the submodule addition works
+### How the auto-submodule works
 
-The custom scaffolder action `monorepo:submodule:add` (in `packages/backend/src/actions/gitSubmodule.ts`):
+The custom scaffolder action `monorepo:submodule:add` in `packages/backend/src/actions/gitSubmodule.ts`:
+
 1. Clones the umbrella repo into a temporary directory
-2. Runs `git submodule add <new-repo-url> labs/frontend/<name>`
-3. Commits with message `feat: auto-added submodule for labs/frontend/<name>`
-4. Pushes back to the umbrella repo
+2. Runs `git submodule add <new-repo-url> labs/frontend/<name>` (or `labs/backend/<name>` for FastAPI)
+3. Commits: `feat: auto-added submodule for labs/frontend/<name>`
+4. Pushes back to the umbrella repo using the GitHub token from `integrations.github[].token`
 
-Auth is handled by injecting the GitHub token from `integrations.github[].token` into the git URL. The `.gitmodules` file stays token-free (uses the plain HTTPS URL).
+The `.gitmodules` file in the umbrella repo always uses plain HTTPS URLs (no embedded tokens).
 
 ---
 
 ## 7. Design System (nifo-shared-ui)
 
-Source: `https://github.com/VarshiniRameshTYN/nifo-shared-ui`
+**Source:** `https://github.com/VarshiniRameshTYN/nifo-shared-ui`
 
-The design system is baked directly into each generated Next.js skeleton — no npm package dependency. This means teams can start immediately with no package registry setup.
+The design system is copied directly into each generated Next.js skeleton at scaffold time — no npm package dependency. Teams get the full design system on `npm install` with no additional setup.
 
-Files mirrored into every generated Next.js app:
+**Files baked into every generated Next.js app:**
 
-| File in skeleton | Source |
+| File in skeleton | Purpose |
 |---|---|
-| `tailwind.config.ts` | `nifo-shared-ui/tailwind.config.ts` |
-| `src/app/globals.css` | `nifo-shared-ui/src/global.css` |
-| `src/components/ui/button.tsx` | shadcn Button styled with nifo tokens |
-| `src/components/ui/badge.tsx` | shadcn Badge with semantic variants |
-| `src/components/ui/card.tsx` | Card with `shadow-card`, `ink-heading` |
-| `src/components/layout/Navbar.tsx` | TYN navbar (navy bg, cyan icon) |
+| `tailwind.config.ts` | Brand tokens, typography scale, custom utilities |
+| `src/app/globals.css` | CSS custom properties (used by Tailwind + raw CSS) |
+| `src/components/ui/button.tsx` | Button with `default`, `outline`, `ghost` variants |
+| `src/components/ui/badge.tsx` | Badge with `default`, `outline`, `secondary` variants |
+| `src/components/ui/card.tsx` | Card with header, content, footer sub-components |
+| `src/components/layout/Navbar.tsx` | TYN navbar — navy background, cyan logo icon |
 
-**Key brand tokens:**
+**Brand tokens:**
 
 | Token | Value | Used for |
 |---|---|---|
 | Primary blue | `#0070C0` | Buttons, links, active states |
 | Brand navy | `#10233F` | Navbar, sidebar, headings |
-| Brand cyan | `#22D3EE` | Accent, icon on dark backgrounds |
+| Brand cyan | `#22D3EE` | Accent on dark backgrounds |
 | Surface/page | `#f7f9fc` | Page background |
-| Radius | `1rem` | Default border radius |
+| Border radius | `1rem` | Cards, buttons, inputs |
 
-The Backstage portal itself uses the same colors via the NiFo Unified Theme registered in `packages/app/src/modules/theme/index.ts`.
+The Backstage portal itself uses the same palette, applied via the NiFo Unified Theme in `packages/app/src/modules/theme/index.ts`.
 
-**When nifo-shared-ui updates:** manually copy the updated `tailwind.config.ts` and `global.css` into both the skeleton folder and `packages/app/src/modules/theme/index.ts` (update the palette hex values). Future improvement: publish as an npm package to CodeArtifact and install via `package.json`.
+**When nifo-shared-ui is updated:** copy the new `tailwind.config.ts` and `global.css` into `templates/nextjs-template/skeleton/` and update the hex values in `packages/app/src/modules/theme/index.ts`. Future plan: publish to AWS CodeArtifact as an npm package.
 
 ---
 
 ## 8. Migrating to AWS CodeCommit
 
-These are the exact files and lines to change. Do them in order.
+Do these in order. All changes are reversible if something goes wrong before the final push.
 
-### Step 1 — Install the CodeCommit scaffolder module
+### Step 1 — Swap the scaffolder backend module
 
 ```bash
 yarn workspace backend add @backstage/plugin-scaffolder-backend-module-aws-codestar
@@ -469,97 +454,81 @@ yarn workspace backend remove @backstage/plugin-scaffolder-backend-module-github
 ### Step 2 — `packages/backend/src/index.ts`
 
 ```typescript
-// REMOVE this line:
+// Remove:
 backend.add(import('@backstage/plugin-scaffolder-backend-module-github'));
 
-// ADD this line:
+// Add:
 backend.add(import('@backstage/plugin-scaffolder-backend-module-aws-codestar'));
 ```
 
 ### Step 3 — `app-config.yaml`: swap integrations block
 
 ```yaml
-# REMOVE:
+# Remove:
 integrations:
   github:
     - host: github.com
       token: ${GITHUB_TOKEN}
 
-# ADD:
+# Add:
 integrations:
   awsCodeCommit:
     - host: git-codecommit.ap-south-1.amazonaws.com
       region: ap-south-1
-      # Use roleArn if running on EC2/ECS with an IAM role (recommended):
+      # IAM role (recommended for EC2/ECS — no keys needed):
       # roleArn: arn:aws:iam::ACCOUNT_ID:role/BackstageCodeCommitRole
-      # Use access keys only for local dev:
+      # Access keys (local dev only):
       accessKeyId: ${AWS_ACCESS_KEY_ID}
       secretAccessKey: ${AWS_SECRET_ACCESS_KEY}
 ```
 
-### Step 4 — `templates/nextjs-template/template.yaml`: swap publish step
-
-Find the `publish` step and the `add-to-umbrella` step, replace both:
+### Step 4 — `templates/nextjs-template/template.yaml`
 
 ```yaml
-# BEFORE — publish:github
+# Before:
 - id: publish
-  name: Publish to GitHub
   action: publish:github
   input:
     repoUrl: github.com?repo=${{ parameters.name }}&owner=Riyaz-TYN
     defaultBranch: main
     repoVisibility: private
 
-# AFTER — publish:awsCodeCommit
+- id: add-to-umbrella
+  action: monorepo:submodule:add
+  input:
+    repoUrl: https://github.com/Riyaz-TYN/Umberella-Repo.git
+
+# After:
 - id: publish
-  name: Publish to CodeCommit
   action: publish:awsCodeCommit
   input:
     repoUrl: aws.amazon.com?repo=${{ parameters.name }}&region=ap-south-1
     defaultBranch: main
 
-# BEFORE — umbrella repoUrl
-- id: add-to-umbrella
-  action: monorepo:submodule:add
-  input:
-    repoUrl: https://github.com/Riyaz-TYN/Umberella-Repo.git
-    submoduleUrl: ${{ steps['publish'].output.remoteUrl }}
-    submodulePath: labs/frontend/${{ parameters.name }}
-
-# AFTER — umbrella repoUrl
 - id: add-to-umbrella
   action: monorepo:submodule:add
   input:
     repoUrl: https://git-codecommit.ap-south-1.amazonaws.com/v1/repos/Umberella-Repo
-    submoduleUrl: ${{ steps['publish'].output.remoteUrl }}
-    submodulePath: labs/frontend/${{ parameters.name }}
 ```
 
-### Step 5 — `templates/fastapi-template/template.yaml`: same changes
+### Step 5 — `templates/fastapi-template/template.yaml`
 
-Exact same find-and-replace as Step 4, but `submodulePath: labs/backend/${{ parameters.name }}` stays as-is (backend path).
+Same changes as Step 4. The `submodulePath: labs/backend/${{ parameters.name }}` line stays unchanged.
 
-### Step 6 — `packages/backend/src/actions/gitSubmodule.ts`: swap auth method
-
-The current file uses a GitHub token injected into the git URL. Replace with AWS credential helper:
+### Step 6 — `packages/backend/src/actions/gitSubmodule.ts`: swap auth
 
 ```typescript
-// REMOVE these lines (roughly lines 29-57 in the current file):
+// Remove (GitHub token injection):
 const integration = integrations.github.byUrl(repoUrl);
 const githubToken = integration?.config?.token;
-if (!githubToken) { throw new Error(...); }
 const authenticatedRepoUrl = repoUrl.replace('https://', `https://${githubToken}@`);
 const gitConfig = [
   `url.https://${githubToken}@github.com.insteadOf=https://github.com`,
-  'user.name=Backstage Scaffolder',
-  'user.email=scaffolder@backstage.io',
+  ...
 ];
 
-// ADD these lines instead:
-// AWS CLI credential helper handles auth automatically via IAM role or env vars.
-// Prerequisite: aws-cli must be installed on the server running Backstage.
-const authenticatedRepoUrl = repoUrl; // no token injection needed
+// Add (AWS credential helper — requires aws-cli on the server):
+const authenticatedRepoUrl = repoUrl;
 const gitConfig = [
   'credential.helper=!aws codecommit credential-helper $@',
   'credential.UseHttpPath=true',
@@ -568,66 +537,49 @@ const gitConfig = [
 ];
 ```
 
-Also remove the `integrations` import and parameter since it is no longer used:
+Also remove the `ScmIntegrations` import and the `integrations` parameter from `createGitSubmoduleAction`.
 
-```typescript
-// REMOVE:
-import { ScmIntegrations } from '@backstage/integration';
-export const createGitSubmoduleAction = (integrations: ScmIntegrations) => {
+### Files changed summary
 
-// REPLACE WITH:
-export const createGitSubmoduleAction = () => {
-```
-
-And in `customScaffolderModule`, update the init:
-
-```typescript
-// REMOVE:
-async init({ scaffolder, config }) {
-  const integrations = ScmIntegrations.fromConfig(config);
-  scaffolder.addActions(createGitSubmoduleAction(integrations));
-},
-
-// REPLACE WITH:
-async init({ scaffolder }) {
-  scaffolder.addActions(createGitSubmoduleAction());
-},
-```
-
-### Summary of all files changed for CodeCommit migration
-
-| File | What changes |
+| File | Change |
 |---|---|
 | `packages/backend/package.json` | Remove github module, add aws-codestar module |
 | `packages/backend/src/index.ts` | Swap one `backend.add(...)` line |
-| `packages/backend/src/actions/gitSubmodule.ts` | Replace GitHub token auth with AWS credential helper (3 edits) |
+| `packages/backend/src/actions/gitSubmodule.ts` | Replace GitHub token auth with AWS credential helper |
 | `app-config.yaml` | Replace `integrations.github` with `integrations.awsCodeCommit` |
 | `app-config.local.yaml` | Replace `GITHUB_TOKEN` with `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` |
-| `templates/nextjs-template/template.yaml` | `publish:github` -> `publish:awsCodeCommit`, update 2 URLs |
+| `templates/nextjs-template/template.yaml` | `publish:github` → `publish:awsCodeCommit`, update umbrella URL |
 | `templates/fastapi-template/template.yaml` | Same as above |
 
-**`catalog/org.yaml` — no changes needed.** The catalog is independent of the git provider.
+`catalog/org.yaml` — no changes needed.
+
+### CodeCommit credential options
+
+| Option | When to use | What to set |
+|---|---|---|
+| **IAM access keys** | Local dev, no EC2 role | `accessKeyId` + `secretAccessKey` in config |
+| **IAM role** | EC2/ECS in production | `roleArn` in config, AWS rotates creds automatically |
+| **HTTPS Git credentials** | Per-user alternative to access keys | Same fields as access keys — get them from IAM console → Security credentials |
 
 ---
 
 ## 9. Migrating to AWS IAM Authentication
 
-The current credential login gate is a temporary measure. When switching to proper AWS IAM / Cognito / SSO:
+The LoginGate is a temporary measure. When switching to Cognito / AWS SSO:
 
-### Step 1 — Add the AWS ALB / OIDC auth module
+### Step 1 — Add the auth module
 
 ```bash
-# For AWS ALB (load balancer auth):
+# AWS ALB (load balancer handles auth):
 yarn workspace backend add @backstage/plugin-auth-backend-module-aws-alb
 
-# Or for Cognito / generic OIDC:
+# Or Cognito / generic OIDC:
 yarn workspace backend add @backstage/plugin-auth-backend-module-oidc
 ```
 
-**`packages/backend/src/index.ts`** — add one line:
+In `packages/backend/src/index.ts`:
 
 ```typescript
-// ADD (choose one based on your setup):
 backend.add(import('@backstage/plugin-auth-backend-module-aws-alb'));
 // or:
 backend.add(import('@backstage/plugin-auth-backend-module-oidc'));
@@ -636,12 +588,12 @@ backend.add(import('@backstage/plugin-auth-backend-module-oidc'));
 ### Step 2 — `app-config.yaml`: update auth providers
 
 ```yaml
-# REPLACE:
+# Remove:
 auth:
   providers:
     guest: {}
 
-# WITH (example for Cognito OIDC):
+# Add (Cognito OIDC example):
 auth:
   environment: production
   providers:
@@ -657,74 +609,70 @@ auth:
 ### Step 3 — `packages/app/src/index.tsx`: remove LoginGate
 
 ```typescript
-// CURRENT:
+// Current:
 import { LoginGate } from './modules/auth/LoginGate';
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <LoginGate>{App.createRoot()}</LoginGate>,
 );
 
-// REPLACE WITH:
+// Replace with:
 ReactDOM.createRoot(document.getElementById('root')!).render(App.createRoot());
 ```
 
-### Step 4 — `packages/app/src/App.tsx`: add sign-in page (if needed)
+Backstage will redirect to the Cognito/SSO login automatically. Delete `packages/app/src/modules/auth/LoginGate.tsx` after.
 
-```typescript
-// Backstage will automatically redirect to the provider's login.
-// If you need a custom sign-in page, add SignInPageBlueprint here.
-// Most AWS SSO setups redirect transparently — no custom page needed.
-```
-
-### What is NOT affected by IAM migration
-
-Everything else stays unchanged:
+### What stays the same after IAM migration
 
 | Component | Status |
 |---|---|
-| Teams management page (`/teams`) | Unchanged — still manages team members |
-| `catalog/org.yaml` | Unchanged — team entities still there |
-| NiFo theme (`modules/theme/`) | Unchanged |
-| Sidebar (`modules/nav/`) | Unchanged |
+| Teams management page (`/teams`) | Unchanged — team CRUD still works |
+| `catalog/org.yaml` | Unchanged |
+| NiFo theme | Unchanged |
+| Sidebar | Unchanged (remove SignOutButton if SSO handles logout) |
 | All scaffolder templates | Unchanged |
 | Umbrella repo structure | Unchanged |
-| `credentialsModule.ts` | Can be kept for team member management, remove login endpoint |
-
-The team banner (navy bar showing team name + members) will need to be updated to read from Backstage's `identityApi` + catalog API instead of `sessionStorage`. That change is inside `packages/app/src/modules/auth/LoginGate.tsx`.
+| `credentialsModule.ts` | Keep the team CRUD endpoints; remove the `/login` endpoint |
 
 ---
 
 ## 10. Migrating to a Cloud Database (PostgreSQL)
 
-The app currently runs on SQLite (`packages/backend/db/*.sqlite`). For cloud deployment, switch to PostgreSQL (AWS RDS, Supabase, etc.).
+The app currently runs on SQLite (`packages/backend/db/*.sqlite`). For production, switch to PostgreSQL (AWS RDS recommended).
 
-### What Backstage migrates automatically
+### What migrates automatically
 
-All Backstage built-in plugin tables (catalog, auth, scaffolder, search, signals, notifications, …) are created by Knex schema migrations that run automatically on the **first backend boot** against the new database. You do not need to do anything for these.
+All Backstage built-in tables (catalog, scaffolder, auth, search, notifications, …) are created automatically by Knex migrations on the first backend boot against the new database.
 
-### What needs the migration script
+### What needs the script
 
-Only the **custom team credential tables** need manual migration:
+Only the custom team tables need manual migration:
 
-| Table | What it holds |
+| Table | Contents |
 |---|---|
-| `tyn_teams` | Team logins — group_id, username, password, display_name |
-| `tyn_members` | Team members — group_id, member_name |
+| `tyn_teams` | group_id, username, password, display_name |
+| `tyn_members` | group_id, member_name |
 
 These live in `packages/backend/db/credentials-auth.sqlite`.
 
-### Step 1 — Run the migration script (before switching)
+### Step 1 — Run the migration script
 
-Do this while the backend is **stopped** and the SQLite file still exists.
+Stop the backend first, then:
 
 ```bash
-# Set your PostgreSQL connection details
-export POSTGRES_HOST=your-db.rds.amazonaws.com
-export POSTGRES_PORT=5432
-export POSTGRES_USER=backstage
-export POSTGRES_PASSWORD=your-password
-export POSTGRES_DB=backstage
+# Windows (PowerShell):
+$env:POSTGRES_HOST="your-db.rds.amazonaws.com"
+$env:POSTGRES_PORT="5432"
+$env:POSTGRES_USER="backstage"
+$env:POSTGRES_PASSWORD="your-password"
+$env:POSTGRES_DB="backstage"
+node scripts/migrate-to-postgres.js
 
-# Run the migration
+# Linux/macOS:
+POSTGRES_HOST=your-db.rds.amazonaws.com \
+POSTGRES_PORT=5432 \
+POSTGRES_USER=backstage \
+POSTGRES_PASSWORD=your-password \
+POSTGRES_DB=backstage \
 node scripts/migrate-to-postgres.js
 ```
 
@@ -732,44 +680,21 @@ Expected output:
 
 ```
 → Reading SQLite: packages/backend/db/credentials-auth.sqlite
-   Found 5 team(s) and 20 member row(s).
+   Found 6 team(s) and 20 member row(s).
 → Connected to PostgreSQL: your-db.rds.amazonaws.com:5432/backstage
 ✓  Migration complete:
-   Teams   — 5 inserted, 0 already existed (skipped)
+   Teams   — 6 inserted, 0 already existed (skipped)
    Members — 20 inserted (replaced per group)
 ```
 
-The script is **idempotent** — safe to run more than once. Existing teams are skipped; member lists are replaced per group.
+The script is idempotent — safe to run more than once.
 
-> **POSTGRES_SSL** defaults to `{ rejectUnauthorized: false }` (accepts self-signed certs).
-> For AWS RDS with full cert validation, set `POSTGRES_SSL=verify` and ensure `app-config.production.yaml` has the CA file path configured.
+### Step 2 — Start with the production config
 
-### Step 2 — Update `app-config.production.yaml`
-
-The file is already updated at the repo root. It reads all connection details from environment variables:
-
-```yaml
-backend:
-  database:
-    client: pg
-    connection:
-      host:     ${POSTGRES_HOST}
-      port:     ${POSTGRES_PORT}
-      user:     ${POSTGRES_USER}
-      password: ${POSTGRES_PASSWORD}
-      database: ${POSTGRES_DB}
-      ssl:
-        rejectUnauthorized: true
-```
-
-### Step 3 — Start Backstage with the production config
-
-Backstage merges config files in order. Pass `app-config.production.yaml` as a second config:
+`app-config.production.yaml` at the repo root is already configured for PostgreSQL. Pass it at startup:
 
 ```bash
 NODE_ENV=production \
-APP_CONFIG_app_baseUrl=https://your-idp-domain.com \
-APP_CONFIG_backend_baseUrl=https://your-idp-domain.com \
 POSTGRES_HOST=your-db.rds.amazonaws.com \
 POSTGRES_PORT=5432 \
 POSTGRES_USER=backstage \
@@ -780,67 +705,72 @@ node packages/backend/dist/index.cjs.js \
   --config app-config.production.yaml
 ```
 
-On first boot Backstage creates all its own tables. The `tyn_teams` / `tyn_members` tables are already there from the script. Everything should work exactly as on SQLite.
+### AWS RDS checklist
 
-### AWS RDS setup checklist
-
-- [ ] RDS instance created (PostgreSQL 14+, `backstage` database, `backstage` user with full privileges on that database)
-- [ ] Security group allows inbound 5432 from the server/container running Backstage
-- [ ] Migration script run and confirmed successful
-- [ ] `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` set in your deployment environment (ECS task definition, EC2 SSM Parameter Store, etc.)
-- [ ] `app-config.production.yaml` used at startup
-- [ ] Delete or move `packages/backend/db/` on the server so SQLite files are not loaded
-
-### Re-running the migration (if teams changed since first migration)
-
-The migration script replaces member lists per group on every run. If teams were added/edited in the SQLite DB after the first migration, re-run the script — it will insert new teams and refresh all member lists.
+- [ ] RDS instance created (PostgreSQL 14+, `backstage` database, `backstage` user with full privileges)
+- [ ] Security group allows inbound port 5432 from the Backstage server
+- [ ] Migration script run and output confirmed
+- [ ] All five `POSTGRES_*` env vars set in your deployment environment
+- [ ] `app-config.production.yaml` passed at startup
+- [ ] `packages/backend/db/` deleted or moved on the server (so SQLite is not loaded)
 
 ---
 
 ## 11. Environment Variables Reference
 
-Set in `app-config.local.yaml` for local dev. Use actual env vars in production.
+All secrets go in `app-config.local.yaml` for local dev. Use real environment variables in production.
 
-### Current (GitHub)
+### Current setup (GitHub)
 
-| Variable | Used in | Purpose |
+| Variable | Where it's used | Purpose |
 |---|---|---|
-| `GITHUB_TOKEN` | `integrations.github[].token` | PAT for creating repos and submodule pushes |
-| `TEAM_ALPHA_PASSWORD` | `credentialsAuth.teams[].password` | Fallback password if not in local config |
-| `TEAM_BETA_PASSWORD` | same | |
-| `TEAM_GAMMA_PASSWORD` | same | |
-| `TEAM_DELTA_PASSWORD` | same | |
-| `TEAM_EPSILON_PASSWORD` | same | |
+| `GITHUB_TOKEN` | `integrations.github[].token` | PAT for repo creation and umbrella submodule pushes |
+| `TEAM_*_PASSWORD` | `credentialsAuth.teams[].password` | Fallback if not set in local config (rarely used) |
 
-### After CodeCommit migration, add
+### After CodeCommit migration
 
 | Variable | Purpose |
 |---|---|
-| `AWS_ACCESS_KEY_ID` | CodeCommit access (skip if using IAM role on EC2) |
-| `AWS_SECRET_ACCESS_KEY` | CodeCommit access (skip if using IAM role on EC2) |
+| `AWS_ACCESS_KEY_ID` | CodeCommit access (skip if using IAM role) |
+| `AWS_SECRET_ACCESS_KEY` | CodeCommit access (skip if using IAM role) |
 | `AWS_REGION` | e.g. `ap-south-1` |
 
-### After IAM auth migration, add
+### After IAM auth migration
 
 | Variable | Purpose |
 |---|---|
 | `COGNITO_CLIENT_ID` | Cognito app client ID |
 | `COGNITO_CLIENT_SECRET` | Cognito app client secret |
 
+### Production (PostgreSQL)
+
+| Variable | Purpose |
+|---|---|
+| `POSTGRES_HOST` | RDS endpoint |
+| `POSTGRES_PORT` | Usually `5432` |
+| `POSTGRES_USER` | Database user |
+| `POSTGRES_PASSWORD` | Database password |
+| `POSTGRES_DB` | Database name (e.g. `backstage`) |
+
 ---
 
 ## Quick Reference
 
-| I want to... | Go to... |
+| I want to... | How |
 |---|---|
-| Add/remove team members | Sidebar -> Teams (sign in as `platform-admin`) |
-| Create a new team | Sidebar -> Teams -> + New Team (admin only) |
-| Create a new frontend app | Sidebar -> Create -> Next.js Frontend |
-| Create a new backend service | Sidebar -> Create -> FastAPI Backend |
-| See all projects and owners | Sidebar -> Catalog |
-| Change brand colors in the portal | `packages/app/src/modules/theme/index.ts` |
-| Change brand colors in generated apps | `templates/nextjs-template/skeleton/tailwind.config.ts` and `globals.css` |
-| Add a new scaffolder template | Create `templates/<name>/template.yaml` + `skeleton/`, add to `app-config.yaml` catalog locations |
-| Switch repo hosting to CodeCommit | Section 8 — 7 files to update |
-| Switch auth to AWS IAM | Section 9 — 4 files to update, LoginGate removed |
+| Start the portal | `yarn start` in the repo root |
+| Log in | [http://localhost:3000](http://localhost:3000) — use team username + password |
+| Sign out | Click **Sign Out** at the bottom of the sidebar |
+| Add/remove members | Sidebar → Teams (log in as `platform-admin`) |
+| Create a new team | Sidebar → Teams → **+ New Team** (admin only) |
+| Scaffold a Next.js app | Sidebar → **Create** → Next.js Frontend |
+| Scaffold a FastAPI service | Sidebar → **Create** → FastAPI Backend |
+| View all projects | Sidebar → **Catalog** |
+| View all teams (read-only for everyone) | Sidebar → **Teams** |
+| Change portal brand colors | `packages/app/src/modules/theme/index.ts` |
+| Change generated app colors | `templates/nextjs-template/skeleton/tailwind.config.ts` + `globals.css` |
+| Add a new scaffolder template | Add `templates/<name>/template.yaml` + `skeleton/`, register in `app-config.local.yaml` catalog locations |
+| Rotate GitHub token | Replace `integrations.github[0].token` in `app-config.local.yaml`, restart |
+| Switch to CodeCommit | Section 8 — 7 files to update |
+| Switch to AWS IAM auth | Section 9 — remove LoginGate, add OIDC provider |
 | Migrate teams DB to PostgreSQL | Section 10 — run `node scripts/migrate-to-postgres.js` |
