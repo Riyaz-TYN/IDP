@@ -105,7 +105,7 @@ yarn install
 # 2. Create your local config file (never commit this)
 ```
 
-Create `app-config.local.yaml` in the project root:
+Create `app-config.local.yaml` in the project root. **This file is git-ignored — never commit it. Share the actual passwords and tokens through a secure channel (direct message / password manager), not by sending this file.**
 
 ```yaml
 credentialsAuth:
@@ -139,21 +139,106 @@ credentialsAuth:
 integrations:
   github:
     - host: github.com
-      token: YOUR_GITHUB_PAT_HERE
+      token: YOUR_GITHUB_PAT_HERE   # see "Rotating credentials" below
 
 catalog:
   locations:
     - type: file
-      target: e:/nifo-ref/nifo-refractor/examples/entities.yaml
+      target: /absolute/path/to/nifo-refractor/examples/entities.yaml
     - type: file
-      target: e:/nifo-ref/nifo-refractor/examples/template/template.yaml
+      target: /absolute/path/to/nifo-refractor/examples/template/template.yaml
       rules:
         - allow: [Template]
     - type: file
-      target: e:/nifo-ref/nifo-refractor/examples/org.yaml
+      target: /absolute/path/to/nifo-refractor/templates/react-template/template.yaml
+      rules:
+        - allow: [Template]
+    - type: file
+      target: /absolute/path/to/nifo-refractor/templates/nextjs-template/template.yaml
+      rules:
+        - allow: [Template]
+    - type: file
+      target: /absolute/path/to/nifo-refractor/templates/fastapi-template/template.yaml
+      rules:
+        - allow: [Template]
+    - type: file
+      target: /absolute/path/to/nifo-refractor/examples/org.yaml
+      rules:
+        - allow: [User, Group]
+    - type: file
+      target: /absolute/path/to/nifo-refractor/catalog/org.yaml
       rules:
         - allow: [User, Group]
 ```
+
+> Replace `/absolute/path/to/nifo-refractor` with the actual full path on your machine (e.g. `e:/nifo-ref/nifo-refractor` on Windows or `/home/user/nifo-refractor` on Linux). Relative paths do not work in this section.
+
+### What to share with a new developer / senior
+
+| What | How to share |
+|---|---|
+| **The codebase** | Clone from GitHub — `git clone git@github.com:Riyaz-TYN/IDP.git` |
+| **Team passwords** | Share verbally or via a password manager — NOT by sending the file |
+| **GitHub PAT** | Each developer generates their own (see Rotating credentials below) |
+| **`app-config.local.yaml`** | **Never share this file** — it contains live secrets. Share the template above and let them fill in their own values. |
+
+The developer only needs to clone the repo and create their own `app-config.local.yaml` following this template. Everything else is in the repository.
+
+### Rotating credentials (token expired or revoked)
+
+#### GitHub (current setup)
+
+The scaffolder uses a GitHub Personal Access Token (PAT) to create repos. PATs expire. When you see `HttpError: Bad credentials` in the scaffolder logs:
+
+1. Go to **github.com → Settings → Developer settings → Personal access tokens → Tokens (classic)**
+2. Click **Generate new token (classic)**
+3. Set an expiry and tick: ✅ `repo` (all sub-items) and ✅ `workflow`
+4. Copy the token
+5. Open `app-config.local.yaml` and replace the value under `integrations.github[].token`
+6. Restart `yarn start` — the new token is picked up immediately
+
+#### AWS CodeCommit (after migration to CodeCommit)
+
+CodeCommit supports two auth methods. Choose one:
+
+**Option A — IAM access keys** (for local dev without an EC2/ECS role):
+
+When you see `fatal: unable to access` or `403` errors in scaffolder logs:
+
+1. Go to **AWS Console → IAM → Users → your-user → Security credentials**
+2. Under **Access keys**, click **Create access key** (deactivate the old one after)
+3. Update `app-config.local.yaml`:
+
+```yaml
+integrations:
+  awsCodeCommit:
+    - host: git-codecommit.ap-south-1.amazonaws.com
+      region: ap-south-1
+      accessKeyId: AKIAxxx       # new key
+      secretAccessKey: yyy       # new secret
+```
+
+4. Restart `yarn start`
+
+**Option B — IAM role on EC2/ECS** (recommended for production — no key rotation needed):
+
+The EC2 instance or ECS task has an attached IAM role with `codecommit:*` permissions. AWS rotates the temporary credentials automatically. No `accessKeyId` or `secretAccessKey` in the config at all:
+
+```yaml
+integrations:
+  awsCodeCommit:
+    - host: git-codecommit.ap-south-1.amazonaws.com
+      region: ap-south-1
+      # No keys — role credentials are picked up automatically from instance metadata
+```
+
+If this stops working, the issue is the IAM role's trust policy or permissions, not a key — check CloudTrail for the actual error.
+
+**Option C — CodeCommit HTTPS Git credentials** (per-user, alternative to access keys):
+
+1. Go to **AWS Console → IAM → Users → your-user → Security credentials**
+2. Scroll to **HTTPS Git credentials for AWS CodeCommit**
+3. Click **Generate credentials**, download, use them as the `accessKeyId` / `secretAccessKey` in the config above
 
 ### Start the portal
 
