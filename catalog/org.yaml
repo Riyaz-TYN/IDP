@@ -3,6 +3,21 @@
 # After editing, restart Backstage — the catalog will re-ingest this file.
 # ─────────────────────────────────────────────────────────────────────────────
 
+# ── Platform Team (owns IDP templates and shared tooling) ────────────────────
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: platform-team
+  title: Platform Team
+  description: TYN platform engineering team — owns IDP templates and shared tooling
+spec:
+  type: team
+  profile:
+    displayName: Platform Team
+  children: []
+  members: []
+
 # ── Team Alpha ────────────────────────────────────────────────────────────────
 ---
 apiVersion: backstage.io/v1alpha1

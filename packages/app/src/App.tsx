@@ -1,10 +1,9 @@
 import { createApp } from '@backstage/frontend-defaults';
 import catalogPlugin from '@backstage/plugin-catalog/alpha';
-import scaffolderPlugin from '@backstage/plugin-scaffolder/alpha';
 import { navModule } from './modules/nav';
 import { themeModule } from './modules/theme';
 import { teamsModule } from './modules/teams';
 
 export default createApp({
-  features: [catalogPlugin, scaffolderPlugin, navModule, themeModule, teamsModule],
+  features: [catalogPlugin, navModule, themeModule, teamsModule],
 });
