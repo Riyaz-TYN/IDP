@@ -43,8 +43,11 @@ export const createGitSubmoduleAction = (integrations: ScmIntegrations) => {
       // Embed token in the clone URL so the initial clone authenticates
       const authenticatedRepoUrl = repoUrl.replace('https://', `https://${githubToken}@`);
 
-      // GIT_TERMINAL_PROMPT=0 ensures git NEVER hangs waiting for a credential prompt
+      // GIT_TERMINAL_PROMPT=0 prevents git from hanging on a credential prompt.
+      // GIT_ASKPASS is unset: simple-git's security plugin blocks it by default,
+      // and we don't need it — the token is embedded directly in the clone URL.
       const env = { ...process.env, GIT_TERMINAL_PROMPT: '0' };
+      delete env.GIT_ASKPASS;
 
       // Shared git config applied to all git operations:
       // url.insteadOf rewrites https://github.com → https://<token>@github.com
