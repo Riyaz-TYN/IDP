@@ -10,6 +10,10 @@ app:
     - page:catalog:
         config:
           path: /
+    # Set NiFo light theme as the default
+    - theme:nifo-light:
+        config:
+          defaultTheme: true
 
 organization:
   name: My Company

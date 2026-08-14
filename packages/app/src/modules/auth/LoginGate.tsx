@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, type FormEvent, type CSSProperties, type ReactNode } from 'react';
 
 const SESSION_KEY = 'tyn-auth';
 
@@ -8,150 +8,9 @@ interface TeamSession {
   members: string[];
 }
 
-function getSession(): TeamSession | null {
-  try {
-    const raw = sessionStorage.getItem(SESSION_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
-
-// ─── Team Banner (shown above Backstage after login) ──────────────────────────
-
-function TeamBanner({ session }: { session: TeamSession }) {
-  const handleLogout = () => {
-    sessionStorage.removeItem(SESSION_KEY);
-    window.location.reload();
-  };
-
-  return (
-    <div style={styles.banner}>
-      <div style={styles.bannerLeft}>
-        <div style={styles.bannerIcon}>
-          {session.displayName.charAt(0).toUpperCase()}
-        </div>
-        <div>
-          <span style={styles.bannerTeam}>{session.displayName}</span>
-          <span style={styles.bannerMembers}>
-            {session.members.join(' · ')}
-          </span>
-        </div>
-      </div>
-      <button style={styles.bannerLogout} onClick={handleLogout}>
-        Sign out
-      </button>
-    </div>
-  );
-}
-
-// ─── Login Page ───────────────────────────────────────────────────────────────
-
-function LoginPage({ onSuccess }: { onSuccess: (session: TeamSession) => void }) {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError]       = useState('');
-  const [loading, setLoading]   = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-    try {
-      const res = await fetch('/api/credentials-auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const session: TeamSession = {
-          groupId:     data.groupId,
-          displayName: data.displayName,
-          members:     data.members,
-        };
-        sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
-        onSuccess(session);
-      } else {
-        setError('Invalid username or password.');
-      }
-    } catch {
-      setError('Could not reach the server. Is the backend running?');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div style={styles.root}>
-      <div style={styles.card}>
-        {/* Logo */}
-        <div style={styles.logoRow}>
-          <div style={styles.logoIcon}>N</div>
-          <span style={styles.logoText}>NiFo · IDP</span>
-        </div>
-        <p style={styles.tagline}>THE YELLOW NETWORK · INTERNAL DEVELOPER PORTAL</p>
-
-        <form onSubmit={handleSubmit} style={styles.form}>
-          <label style={styles.label}>Team Username</label>
-          <input
-            style={styles.input}
-            type="text"
-            autoComplete="username"
-            autoFocus
-            value={username}
-            onChange={e => setUsername(e.target.value)}
-            placeholder="e.g. team-alpha"
-            required
-          />
-
-          <label style={styles.label}>Password</label>
-          <input
-            style={styles.input}
-            type="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            placeholder="••••••••••••"
-            required
-          />
-
-          {error && <p style={styles.error}>{error}</p>}
-
-          <button style={styles.button} type="submit" disabled={loading}>
-            {loading ? 'Signing in…' : 'Sign in'}
-          </button>
-        </form>
-
-        <p style={styles.footer}>
-          Each team has their own credentials.<br />
-          Contact your IDP admin if you need access.
-        </p>
-      </div>
-    </div>
-  );
-}
-
-// ─── Gate ─────────────────────────────────────────────────────────────────────
-
-export function LoginGate({ children }: { children: React.ReactNode }) {
-  const [session, setSession] = useState<TeamSession | null>(getSession);
-
-  if (!session) {
-    return <LoginPage onSuccess={setSession} />;
-  }
-
-  return (
-    <>
-      <TeamBanner session={session} />
-      {children}
-    </>
-  );
-}
-
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const styles: Record<string, React.CSSProperties> = {
+const styles: Record<string, CSSProperties> = {
   // Login page
   root: {
     minHeight: '100vh',
@@ -304,3 +163,147 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: 'Inter, sans-serif',
   },
 };
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function getSession(): TeamSession | null {
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+// ─── Team Banner (shown above Backstage after login) ──────────────────────────
+
+function TeamBanner({ session }: { session: TeamSession }) {
+  const handleLogout = () => {
+    sessionStorage.removeItem(SESSION_KEY);
+    window.location.reload();
+  };
+
+  return (
+    <div style={styles.banner}>
+      <div style={styles.bannerLeft}>
+        <div style={styles.bannerIcon}>
+          {session.displayName.charAt(0).toUpperCase()}
+        </div>
+        <div>
+          <span style={styles.bannerTeam}>{session.displayName}</span>
+          <span style={styles.bannerMembers}>
+            {session.members.join(' · ')}
+          </span>
+        </div>
+      </div>
+      <button style={styles.bannerLogout} onClick={handleLogout}>
+        Sign out
+      </button>
+    </div>
+  );
+}
+
+// ─── Login Page ───────────────────────────────────────────────────────────────
+
+function LoginPage({ onSuccess }: { onSuccess: (session: TeamSession) => void }) {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError]       = useState('');
+  const [loading, setLoading]   = useState(false);
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const res = await fetch('/api/credentials-auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const session: TeamSession = {
+          groupId:     data.groupId,
+          displayName: data.displayName,
+          members:     data.members,
+        };
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+        onSuccess(session);
+      } else {
+        setError('Invalid username or password.');
+      }
+    } catch {
+      setError('Could not reach the server. Is the backend running?');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={styles.root}>
+      <div style={styles.card}>
+        {/* Logo */}
+        <div style={styles.logoRow}>
+          <div style={styles.logoIcon}>N</div>
+          <span style={styles.logoText}>NiFo · IDP</span>
+        </div>
+        <p style={styles.tagline}>THE YELLOW NETWORK · INTERNAL DEVELOPER PORTAL</p>
+
+        <form onSubmit={handleSubmit} style={styles.form}>
+          <label htmlFor="tyn-username" style={styles.label}>Team Username</label>
+          <input
+            id="tyn-username"
+            style={styles.input}
+            type="text"
+            autoComplete="username"
+            value={username}
+            onChange={e => setUsername(e.target.value)}
+            placeholder="e.g. team-alpha"
+            required
+          />
+
+          <label htmlFor="tyn-password" style={styles.label}>Password</label>
+          <input
+            id="tyn-password"
+            style={styles.input}
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            placeholder="••••••••••••"
+            required
+          />
+
+          {error && <p style={styles.error}>{error}</p>}
+
+          <button style={styles.button} type="submit" disabled={loading}>
+            {loading ? 'Signing in…' : 'Sign in'}
+          </button>
+        </form>
+
+        <p style={styles.footer}>
+          Each team has their own credentials.<br />
+          Contact your IDP admin if you need access.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ─── Gate ─────────────────────────────────────────────────────────────────────
+
+export function LoginGate({ children }: { children: ReactNode }) {
+  const [session, setSession] = useState<TeamSession | null>(getSession);
+
+  if (!session) {
+    return <LoginPage onSuccess={setSession} />;
+  }
+
+  return (
+    <>
+      <TeamBanner session={session} />
+      {children}
+    </>
+  );
+}
