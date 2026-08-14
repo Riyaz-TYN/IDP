@@ -52,9 +52,7 @@ backend.add(
 // search plugin
 backend.add(import('@backstage/plugin-search-backend'));
 
-// search engine
-// See https://backstage.io/docs/features/search/search-engines
-backend.add(import('@backstage/plugin-search-backend-module-pg'));
+// search engine — pg module disabled (no PostgreSQL in dev); catalog search via lunr default
 
 // search collators
 backend.add(import('@backstage/plugin-search-backend-module-catalog'));
