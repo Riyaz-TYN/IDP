@@ -15,7 +15,8 @@ A Backstage-based Internal Developer Portal for The Yellow Network (TYN). Teams 
 7. [Design System (nifo-shared-ui)](#7-design-system-nifo-shared-ui)
 8. [Migrating to AWS CodeCommit](#8-migrating-to-aws-codecommit)
 9. [Migrating to AWS IAM Authentication](#9-migrating-to-aws-iam-authentication)
-10. [Environment Variables Reference](#10-environment-variables-reference)
+10. [Migrating to a Cloud Database (PostgreSQL)](#10-migrating-to-a-cloud-database-postgresql)
+11. [Environment Variables Reference](#11-environment-variables-reference)
 
 ---
 
@@ -68,7 +69,7 @@ nifo-refractor/                  <- Backstage monorepo root
 │           │   └── credentialsModule.ts  <- Team login + CRUD API + SQLite storage
 │           └── actions/
 │               └── gitSubmodule.ts       <- monorepo:submodule:add scaffolder action
-└── backstage-local.db           <- SQLite database (gitignored, auto-created)
+└── packages/backend/db/         <- SQLite databases (gitignored, auto-created on first run)
 ```
 
 **Separate repos:**
@@ -163,7 +164,7 @@ yarn start
 
 Open [http://localhost:3000](http://localhost:3000). You will see the NiFo login page.
 
-> The SQLite database `backstage-local.db` is created automatically on first run. Teams from `app-config.local.yaml` are seeded into it on first boot only. After that, manage teams through the UI at `/teams` — no restarts needed.
+> The SQLite databases are created automatically in `packages/backend/db/` on first run. Teams from `app-config.local.yaml` are seeded into `credentials-auth.sqlite` on first boot only. After that, manage teams through the UI at `/teams` — no restarts needed.
 
 ---
 
@@ -578,7 +579,111 @@ The team banner (navy bar showing team name + members) will need to be updated t
 
 ---
 
-## 10. Environment Variables Reference
+## 10. Migrating to a Cloud Database (PostgreSQL)
+
+The app currently runs on SQLite (`packages/backend/db/*.sqlite`). For cloud deployment, switch to PostgreSQL (AWS RDS, Supabase, etc.).
+
+### What Backstage migrates automatically
+
+All Backstage built-in plugin tables (catalog, auth, scaffolder, search, signals, notifications, …) are created by Knex schema migrations that run automatically on the **first backend boot** against the new database. You do not need to do anything for these.
+
+### What needs the migration script
+
+Only the **custom team credential tables** need manual migration:
+
+| Table | What it holds |
+|---|---|
+| `tyn_teams` | Team logins — group_id, username, password, display_name |
+| `tyn_members` | Team members — group_id, member_name |
+
+These live in `packages/backend/db/credentials-auth.sqlite`.
+
+### Step 1 — Run the migration script (before switching)
+
+Do this while the backend is **stopped** and the SQLite file still exists.
+
+```bash
+# Set your PostgreSQL connection details
+export POSTGRES_HOST=your-db.rds.amazonaws.com
+export POSTGRES_PORT=5432
+export POSTGRES_USER=backstage
+export POSTGRES_PASSWORD=your-password
+export POSTGRES_DB=backstage
+
+# Run the migration
+node scripts/migrate-to-postgres.js
+```
+
+Expected output:
+
+```
+→ Reading SQLite: packages/backend/db/credentials-auth.sqlite
+   Found 5 team(s) and 20 member row(s).
+→ Connected to PostgreSQL: your-db.rds.amazonaws.com:5432/backstage
+✓  Migration complete:
+   Teams   — 5 inserted, 0 already existed (skipped)
+   Members — 20 inserted (replaced per group)
+```
+
+The script is **idempotent** — safe to run more than once. Existing teams are skipped; member lists are replaced per group.
+
+> **POSTGRES_SSL** defaults to `{ rejectUnauthorized: false }` (accepts self-signed certs).
+> For AWS RDS with full cert validation, set `POSTGRES_SSL=verify` and ensure `app-config.production.yaml` has the CA file path configured.
+
+### Step 2 — Update `app-config.production.yaml`
+
+The file is already updated at the repo root. It reads all connection details from environment variables:
+
+```yaml
+backend:
+  database:
+    client: pg
+    connection:
+      host:     ${POSTGRES_HOST}
+      port:     ${POSTGRES_PORT}
+      user:     ${POSTGRES_USER}
+      password: ${POSTGRES_PASSWORD}
+      database: ${POSTGRES_DB}
+      ssl:
+        rejectUnauthorized: true
+```
+
+### Step 3 — Start Backstage with the production config
+
+Backstage merges config files in order. Pass `app-config.production.yaml` as a second config:
+
+```bash
+NODE_ENV=production \
+APP_CONFIG_app_baseUrl=https://your-idp-domain.com \
+APP_CONFIG_backend_baseUrl=https://your-idp-domain.com \
+POSTGRES_HOST=your-db.rds.amazonaws.com \
+POSTGRES_PORT=5432 \
+POSTGRES_USER=backstage \
+POSTGRES_PASSWORD=your-password \
+POSTGRES_DB=backstage \
+node packages/backend/dist/index.cjs.js \
+  --config app-config.yaml \
+  --config app-config.production.yaml
+```
+
+On first boot Backstage creates all its own tables. The `tyn_teams` / `tyn_members` tables are already there from the script. Everything should work exactly as on SQLite.
+
+### AWS RDS setup checklist
+
+- [ ] RDS instance created (PostgreSQL 14+, `backstage` database, `backstage` user with full privileges on that database)
+- [ ] Security group allows inbound 5432 from the server/container running Backstage
+- [ ] Migration script run and confirmed successful
+- [ ] `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` set in your deployment environment (ECS task definition, EC2 SSM Parameter Store, etc.)
+- [ ] `app-config.production.yaml` used at startup
+- [ ] Delete or move `packages/backend/db/` on the server so SQLite files are not loaded
+
+### Re-running the migration (if teams changed since first migration)
+
+The migration script replaces member lists per group on every run. If teams were added/edited in the SQLite DB after the first migration, re-run the script — it will insert new teams and refresh all member lists.
+
+---
+
+## 11. Environment Variables Reference
 
 Set in `app-config.local.yaml` for local dev. Use actual env vars in production.
 
@@ -624,3 +729,4 @@ Set in `app-config.local.yaml` for local dev. Use actual env vars in production.
 | Add a new scaffolder template | Create `templates/<name>/template.yaml` + `skeleton/`, add to `app-config.yaml` catalog locations |
 | Switch repo hosting to CodeCommit | Section 8 — 7 files to update |
 | Switch auth to AWS IAM | Section 9 — 4 files to update, LoginGate removed |
+| Migrate teams DB to PostgreSQL | Section 10 — run `node scripts/migrate-to-postgres.js` |
