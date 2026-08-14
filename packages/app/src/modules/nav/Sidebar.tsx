@@ -10,6 +10,7 @@ import { SidebarLogo } from './SidebarLogo';
 import MenuIcon from '@material-ui/icons/Menu';
 import SearchIcon from '@material-ui/icons/Search';
 import SettingsIcon from '@material-ui/icons/Settings';
+import PeopleAltIcon from '@material-ui/icons/PeopleAlt';
 import { SidebarSearchModal } from '@backstage/plugin-search';
 import { NotificationsSidebarItem } from '@backstage/plugin-notifications';
 
@@ -33,7 +34,7 @@ export const SidebarContent = NavContentBlueprint.make({
           <SidebarGroup label="Menu" icon={<MenuIcon />}>
             {nav.take('page:catalog')}
             {nav.take('page:scaffolder')}
-            {nav.take('page:app/teams')}
+            <SidebarItem icon={PeopleAltIcon} to="/teams" text="Teams" />
           </SidebarGroup>
           <SidebarSpace />
           <SidebarDivider />
