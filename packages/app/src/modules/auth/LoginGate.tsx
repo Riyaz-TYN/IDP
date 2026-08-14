@@ -11,7 +11,6 @@ interface TeamSession {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles: Record<string, CSSProperties> = {
-  // Login page
   root: {
     minHeight: '100vh',
     display: 'flex',
@@ -114,54 +113,6 @@ const styles: Record<string, CSSProperties> = {
     marginTop: 24,
     lineHeight: 1.6,
   },
-  // Team banner
-  banner: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '0 24px',
-    height: 40,
-    background: '#10233F',
-    fontFamily: 'Inter, sans-serif',
-    flexShrink: 0,
-  },
-  bannerLeft: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 10,
-  },
-  bannerIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    background: '#22D3EE',
-    color: '#071A2F',
-    fontWeight: 700,
-    fontSize: 12,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  bannerTeam: {
-    color: '#ffffff',
-    fontWeight: 600,
-    fontSize: 13,
-    marginRight: 12,
-  },
-  bannerMembers: {
-    color: 'rgba(255,255,255,0.5)',
-    fontSize: 12,
-  },
-  bannerLogout: {
-    background: 'transparent',
-    border: '1px solid rgba(255,255,255,0.2)',
-    borderRadius: 6,
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: 11,
-    padding: '3px 10px',
-    cursor: 'pointer',
-    fontFamily: 'Inter, sans-serif',
-  },
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -173,34 +124,6 @@ function getSession(): TeamSession | null {
   } catch {
     return null;
   }
-}
-
-// ─── Team Banner (shown above Backstage after login) ──────────────────────────
-
-function TeamBanner({ session }: { session: TeamSession }) {
-  const handleLogout = () => {
-    sessionStorage.removeItem(SESSION_KEY);
-    window.location.reload();
-  };
-
-  return (
-    <div style={styles.banner}>
-      <div style={styles.bannerLeft}>
-        <div style={styles.bannerIcon}>
-          {session.displayName.charAt(0).toUpperCase()}
-        </div>
-        <div>
-          <span style={styles.bannerTeam}>{session.displayName}</span>
-          <span style={styles.bannerMembers}>
-            {session.members.join(' · ')}
-          </span>
-        </div>
-      </div>
-      <button style={styles.bannerLogout} onClick={handleLogout}>
-        Sign out
-      </button>
-    </div>
-  );
 }
 
 // ─── Login Page ───────────────────────────────────────────────────────────────
@@ -243,7 +166,6 @@ function LoginPage({ onSuccess }: { onSuccess: (session: TeamSession) => void })
   return (
     <div style={styles.root}>
       <div style={styles.card}>
-        {/* Logo */}
         <div style={styles.logoRow}>
           <div style={styles.logoIcon}>N</div>
           <span style={styles.logoText}>NiFo · IDP</span>
@@ -300,10 +222,5 @@ export function LoginGate({ children }: { children: ReactNode }) {
     return <LoginPage onSuccess={setSession} />;
   }
 
-  return (
-    <>
-      <TeamBanner session={session} />
-      {children}
-    </>
-  );
+  return <>{children}</>;
 }

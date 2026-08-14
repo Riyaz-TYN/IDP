@@ -6,6 +6,13 @@
   "backstage": {
     "role": "frontend"
   },
+  "proxy": [
+    {
+      "context": ["/api"],
+      "target": "http://localhost:7007",
+      "changeOrigin": true
+    }
+  ],
   "scripts": {
     "start": "backstage-cli package start",
     "build": "backstage-cli package build",
