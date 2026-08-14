@@ -11,8 +11,41 @@ import MenuIcon from '@material-ui/icons/Menu';
 import SearchIcon from '@material-ui/icons/Search';
 import SettingsIcon from '@material-ui/icons/Settings';
 import PeopleAltIcon from '@material-ui/icons/PeopleAlt';
+import ExitToAppIcon from '@material-ui/icons/ExitToApp';
 import { SidebarSearchModal } from '@backstage/plugin-search';
 import { NotificationsSidebarItem } from '@backstage/plugin-notifications';
+
+function SignOutButton() {
+  const handleSignOut = () => {
+    sessionStorage.removeItem('tyn-auth');
+    window.location.reload();
+  };
+
+  return (
+    <button
+      onClick={handleSignOut}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        width: '100%',
+        padding: '10px 24px',
+        background: 'none',
+        border: 'none',
+        color: '#cbd5e1',
+        fontSize: 14,
+        fontFamily: 'inherit',
+        cursor: 'pointer',
+        letterSpacing: '0.01em',
+      }}
+      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(34,211,238,0.08)'; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'none'; }}
+    >
+      <ExitToAppIcon style={{ fontSize: 20 }} />
+      Sign Out
+    </button>
+  );
+}
 
 export const SidebarContent = NavContentBlueprint.make({
   params: {
@@ -48,6 +81,8 @@ export const SidebarContent = NavContentBlueprint.make({
             {nav.take('page:app-visualizer')}
             {nav.take('page:user-settings')}
           </SidebarGroup>
+          <SidebarDivider />
+          <SignOutButton />
         </Sidebar>
       );
     },
